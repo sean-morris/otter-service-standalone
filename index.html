@@ -1,0 +1,28 @@
+<html>
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+<title>Upload Form</title>
+</head>
+<body>
+<p><h1>Grade: Upload autograder.zip and notebooks</h1></p>
+<form enctype="multipart/form-data" action="/upload" method="post">
+    Autograder Zip File: <input type="file" name="autograder" value=""/></br>
+    Notebooks Zip File: <input type="file" name="notebooks" value=""/>
+    <br />
+    <br />
+    <input type="submit" value="upload" />
+    {% if 'message' in globals().keys() and message is not None %}
+    <p>{{ message }}</p>
+    {% end %}
+       
+<br />
+<br />
+<p><h1>Results: Check Status and Download</h1></p>
+Download Code: <input type="text" name="download" value=""/>
+<br />
+<br />
+<input type="submit" value="download" />
+{% if 'download_message' in globals().keys() and download_message is not None %}
+<p>{{ download_message }}</p>
+{% end %}
+</form>
