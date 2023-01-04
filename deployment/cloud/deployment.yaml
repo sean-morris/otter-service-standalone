@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otter-pod
+  labels:
+    app: otter-srv-standalone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otter-srv-standalone
+  template:
+    metadata:
+      labels:
+        app: otter-srv-standalone
+    spec:
+      serviceAccountName: otter-k8-sa
+      containers:
+        - name: otter-srv
+          image: gcr.io/data8x-scratch/otter-srv:latest
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 200m
+              ephemeral-storage: 1Gi
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
+          ports:
+            - containerPort: 10101
+          volumeMounts:
+            - name: opt-volume
+              mountPath: /opt
+            - name: tmp-volume
+              mountPath: /tmp
+          env:
+            - name: DOCKER_HOST 
+              value: tcp://localhost:2375
+            - name: DOCKER_CLI_EXPERIMENTAL
+              value: enabled
+          envFrom:
+            - configMapRef:
+                name: otter-env   
+        - name: otter-dind
+          image: docker:20-dind
+          args: ["--tls=false"]
+          imagePullPolicy: Always
+          securityContext: 
+            privileged: true 
+          resources:
+            limits:
+              cpu: 200m
+              ephemeral-storage: 1Gi
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
+          volumeMounts:
+            - name: opt-volume
+              mountPath: /opt
+            - name: tmp-volume
+              mountPath: /tmp
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: ""
+      volumes:
+        - name: opt-volume
+          persistentVolumeClaim:
+            claimName: otter-opt-volume-claim
+        - name: tmp-volume
+          persistentVolumeClaim:
+            claimName: otter-tmp-volume-claim
+

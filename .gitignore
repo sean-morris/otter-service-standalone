@@ -1,2 +1,8 @@
 uploads/
 .DS_Store
+*.egg-info/
+__pycache__
+build/
+dist/
+docker-compose.yml
+deployment/cloud/deploy-remove.sh
