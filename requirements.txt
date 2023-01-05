@@ -1,6 +1,7 @@
 alabaster==0.7.12
 appnope==0.1.3
 asttokens==2.1.0
+async_timeout==4.0.2
 attrs==22.1.0
 Babel==2.11.0
 backcall==0.2.0
@@ -25,6 +26,7 @@ entrypoints==0.4
 executing==1.2.0
 fastjsonschema==2.16.2
 fica==0.2.2
+firebase-admin==6.0.1
 folium==0.14.0
 fonttools==4.38.0
 google-api-core==2.10.2
@@ -32,7 +34,9 @@ google-api-python-client==2.65.0
 google-auth==2.14.1
 google-auth-httplib2==0.1.0
 google-auth-oauthlib==0.7.1
+google-cloud-firestore==2.7.2
 googleapis-common-protos==1.56.4
+grpcio==1.51.1
 gspread==5.6.2
 httplib2==0.21.0
 idna==3.4

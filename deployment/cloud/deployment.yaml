@@ -8,16 +8,16 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: otter-srv-standalone
+      app: otter-srv-stdalone
   template:
     metadata:
       labels:
-        app: otter-srv-standalone
+        app: otter-srv-stdalone
     spec:
-      serviceAccountName: otter-k8-sa
+      serviceAccountName: otter-stdalone-k8-sa
       containers:
-        - name: otter-srv
-          image: gcr.io/data8x-scratch/otter-srv:latest
+        - name: otter-srv-stdalone
+          image: gcr.io/data8x-scratch/otter-srv-stdalone:latest
           imagePullPolicy: Always
           resources:
             limits:
@@ -29,7 +29,7 @@ spec:
               ephemeral-storage: 1Gi
               memory: 1Gi
           ports:
-            - containerPort: 10101
+            - containerPort: 80
           volumeMounts:
             - name: opt-volume
               mountPath: /opt

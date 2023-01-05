@@ -6,34 +6,56 @@ import os, uuid
 from subprocess import run
 from tornado.concurrent import Future
 from tornado.httpclient import AsyncHTTPClient
-
+from otter_service_stdalone import fs_logging as log
 from zipfile import ZipFile, ZIP_DEFLATED
-
+import asyncio
+import async_timeout
 
 __UPLOADS__ = "/tmp/uploads"
 
 class GradeNotebooks():
-    def async_upload(url):
-        http_client = AsyncHTTPClient()
-        my_future = Future()
-        fetch_future = http_client.fetch(url)
-        def on_fetch(f):
-            my_future.set_result(f.result().body)
-        fetch_future.add_done_callback(on_fetch)
-        return my_future
-
     async def grade(self, p, notebooks_zip):
         zip_folder = notebooks_zip.split(".")[0]
         with ZipFile(notebooks_zip, 'r') as zObject:
             zObject.extractall(path=zip_folder)
-        out = run(["otter", "grade", "-a", p, "-p", zip_folder, "--ext", "ipynb", "-o", zip_folder, "-v"], capture_output=True)
+
+        command = [
+            'otter', 'grade',
+            '-a', p,
+            '-p', zip_folder,
+            "--ext", "ipynb", 
+            "-o", zip_folder, 
+            "-v"
+        ]
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        # this is waiting for communication back from the process
+        # some images are quite big and take some time to build the first
+        # time through - like 20 min for otter-grader
+        async with async_timeout.timeout(2000):
+            stdout, stderr = await process.communicate()
+
+        for line in stderr.decode('utf-8').split('\n'):
+            if line.strip() == '':
+                # Ignore empty lines
+                continue
+            if 'Killed' in line:
+                # Our container was killed, so let's just skip this one
+                raise Exception(f"Container was killed -- nothing will work")
+
         with open(f"{zip_folder}/grading-output.txt", "w") as f:
-            for line in out.stdout.decode().splitlines():
+            for line in stdout.decode().splitlines():
                 f.write(line + "\n")
         
         with open(f"{zip_folder}/grading-logs.txt", "w") as f:
-            for line in out.stderr.decode().splitlines():
+            for line in stderr.decode().splitlines():
                 f.write(line  + "\n")
+        
         return "Grading Done"
 
 class Userform(tornado.web.RequestHandler):
@@ -50,7 +72,7 @@ class Download(tornado.web.RequestHandler):
         elif not os.path.exists(f"{directory}"):
             msg = f"The download code appears to not be correct or expired - results are deleted each night: {code}. Please check the code or upload your notebooks and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
-        elif not os.path.exists(f"{directory}/final_grades.csv"):
+        elif not os.path.isfile(f"{directory}/final_grades.csv"):
             msg = "The results of your download are not ready yet. Please check back."
             self.render("index.html",  download_message=msg)
         else:
@@ -117,9 +139,11 @@ application = tornado.web.Application([
 def main():
     try:
         application.listen(80)
+        log.write_logs("Starting Server", "", "info", f'{os.environ.get("ENVIRONMENT")}-logs')
         tornado.ioloop.IOLoop.instance().start()
-    except:
-        print("Error starting server")
+        
+    except Exception as e:
+        log.write_logs("Server Starting error", str(e), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
 
 if __name__ == "__main__":
     main()

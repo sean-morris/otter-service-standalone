@@ -4,9 +4,9 @@ metadata:
   name: otter-lb
 spec:
   selector:
-    app: otter-srv
+    app: otter-srv-stdalone
   ports:
-    - port: 10101
-      targetPort: 10101
+    - port: 80
+      targetPort: 80
   type: LoadBalancer
-  loadBalancerIP: "set-by-script"
+  loadBalancerIP: "34.134.165.169"

@@ -38,12 +38,12 @@ elif [[ $WORKLOAD_ID_POOL_PROVIDERS_OUT =~ "NOT_FOUND" ]]; then
     --display-name="Otter Provider" \
     --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
     --issuer-uri="https://token.actions.githubusercontent.com"
-    echo Workload Identity Pools Prividers: github-actions: Created
+    echo Workload Identity Pools Providers: github-actions: Created
 else
   echo Workload Identity Pools Providers: OIDC for github-actions: Active
 fi
 
-gcloud iam service-accounts add-iam-policy-binding "otter-sa@data8x-scratch.iam.gserviceaccount.com" \
+gcloud iam service-accounts add-iam-policy-binding "otter-stdalone-sa@data8x-scratch.iam.gserviceaccount.com" \
   --project="data8x-scratch" \
   --role="roles/iam.workloadIdentityUser" \
   --member="principalSet://iam.googleapis.com/projects/75088546496/locations/global/workloadIdentityPools/otter-pool/*" \
