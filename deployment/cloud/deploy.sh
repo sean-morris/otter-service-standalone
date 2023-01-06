@@ -11,15 +11,15 @@ if [ "$branch_name" == "staging" ]; then
 fi
 JUPYTERHUB_API_URL="$JUPYTERHUB_BASE_URL/hub/api"
 
-# if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
-#     python3 -m build
-#     python3 -m pip install dist/otter_service_stdalone-${version}.tar.gz --force
-#     python3 -m twine upload dist/*$version*
+if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
+    python3 -m build
+    python3 -m pip install dist/otter_service_stdalone-${version}.tar.gz --force
+    python3 -m twine upload dist/*$version*
     
-#     yq eval ".services.app.build.args.OTTER_SERVICE_STDALONE_VERSION=\"$version\"" -i docker-compose.yml
-#     # if breaks on Permission denied run: gcloud auth login
-#     gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version --config ./deployment/cloud/cloudbuild.yaml
-# fi
+    yq eval ".services.app.build.args.OTTER_SERVICE_STDALONE_VERSION=\"$version\"" -i docker-compose.yml
+    # if breaks on Permission denied run: gcloud auth login
+    gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version --config ./deployment/cloud/cloudbuild.yaml
+fi
 
 export KUBECONFIG=./kube-context
 gcloud container clusters get-credentials otter-cluster-v3 --region us-central1 --project data8x-scratch                  
@@ -56,4 +56,4 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
 #     git checkout -- deployment/cloud/deployment-service.yaml
 #     git checkout -- deployment/cloud/deployment-config-encrypted.yaml
 fi
-#rm -f ./kube-context
+rm -f ./kube-context
