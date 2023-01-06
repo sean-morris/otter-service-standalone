@@ -15,47 +15,54 @@ __UPLOADS__ = "/tmp/uploads"
 
 class GradeNotebooks():
     async def grade(self, p, notebooks_zip):
-        zip_folder = notebooks_zip.split(".")[0]
-        with ZipFile(notebooks_zip, 'r') as zObject:
-            zObject.extractall(path=zip_folder)
+        try:
+            zip_folder = notebooks_zip.split(".")[0]
+            with ZipFile(notebooks_zip, 'r') as zObject:
+                zObject.extractall(path=zip_folder)
+            
+            command = [
+                'otter', 'grade',
+                '-a', p,
+                '-p', zip_folder,
+                "--ext", "ipynb", 
+                "-o", zip_folder, 
+                "-v"
+            ]
+            log.write_logs(f"Grading: Start: {zip_folder}", " ".join(command), "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
 
-        command = [
-            'otter', 'grade',
-            '-a', p,
-            '-p', zip_folder,
-            "--ext", "ipynb", 
-            "-o", zip_folder, 
-            "-v"
-        ]
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
+            # this is waiting for communication back from the process
+            # some images are quite big and take some time to build the first
+            # time through - like 20 min for otter-grader
+            async with async_timeout.timeout(2000):
+                stdout, stderr = await process.communicate()
+            
+            log.write_logs(f"Grading: Finished: {zip_folder}", "", "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+            
+            for line in stderr.decode('utf-8').split('\n'):
+                if line.strip() == '':
+                    # Ignore empty lines
+                    continue
+                if 'Killed' in line:
+                    # Our container was killed, so let's just skip this one
+                    raise Exception(f"Container was killed -- nothing will work")
 
-        # this is waiting for communication back from the process
-        # some images are quite big and take some time to build the first
-        # time through - like 20 min for otter-grader
-        async with async_timeout.timeout(2000):
-            stdout, stderr = await process.communicate()
-
-        for line in stderr.decode('utf-8').split('\n'):
-            if line.strip() == '':
-                # Ignore empty lines
-                continue
-            if 'Killed' in line:
-                # Our container was killed, so let's just skip this one
-                raise Exception(f"Container was killed -- nothing will work")
-
-        with open(f"{zip_folder}/grading-output.txt", "w") as f:
-            for line in stdout.decode().splitlines():
-                f.write(line + "\n")
-        
-        with open(f"{zip_folder}/grading-logs.txt", "w") as f:
-            for line in stderr.decode().splitlines():
-                f.write(line  + "\n")
-        
+            with open(f"{zip_folder}/grading-output.txt", "w") as f:
+                for line in stdout.decode().splitlines():
+                    f.write(line + "\n")
+            
+            with open(f"{zip_folder}/grading-logs.txt", "w") as f:
+                for line in stderr.decode().splitlines():
+                    f.write(line  + "\n")
+        except asyncio.TimeoutError:
+            raise Exception(f'Grading timed out for {zip_folder}')
+        except Exception as e:
+            raise e  
         return "Grading Done"
 
 class Userform(tornado.web.RequestHandler):
@@ -67,13 +74,13 @@ class Download(tornado.web.RequestHandler):
         code = self.get_argument('download')
         directory = f"{__UPLOADS__}/{code}"
         if code == "":
-            msg = f"Please enter the download code to see your results."
+            msg = f"Please enter the download code to see your result."
             self.render("index.html",  download_message=msg)
         elif not os.path.exists(f"{directory}"):
             msg = f"The download code appears to not be correct or expired - results are deleted each night: {code}. Please check the code or upload your notebooks and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
         elif not os.path.isfile(f"{directory}/final_grades.csv"):
-            msg = "The results of your download are not ready yet. Please check back."
+            msg = f"The results of your download are not ready yet. Please check back: {code}"
             self.render("index.html",  download_message=msg)
         else:
             with ZipFile(f"{directory}/results.zip", 'w') as zipF:
@@ -121,8 +128,10 @@ class Upload(tornado.web.RequestHandler):
             
             m = f"Please save this code. You can retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
-            return_msg = await g.grade(auto_p, notebook)
-            print(return_msg)
+            try:
+                await g.grade(auto_p, notebook)
+            except Exception as e:
+                log.write_logs("Grading Problem", str(e), "error", f'{os.environ.get("ENVIRONMENT")}-logs')
         else:
             m = f"It looks like you did not set one of the upload zip files."
             self.render("index.html", message=m)

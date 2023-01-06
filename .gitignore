@@ -6,3 +6,4 @@ build/
 dist/
 docker-compose.yml
 deployment/cloud/deploy-remove.sh
+*-debug.log

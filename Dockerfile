@@ -24,7 +24,7 @@ RUN python3 -m pip install otter-service-stdalone
 # install docker cli
 ENV DOCKER_VERSION 5:20.10.17~3-0~ubuntu-focal
 RUN apt-get update
-RUN apt-get install \
+RUN apt-get install -y \
     ca-certificates \
     curl \
     gnupg \
