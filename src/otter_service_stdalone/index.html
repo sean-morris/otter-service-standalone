@@ -73,7 +73,7 @@
                         <form enctype="multipart/form-data" action="/download" method="post">
                             <div class="field">
                                 <div class="control">
-                                  <input class="input is-medium" type="text" name="download" value="" placeholder="Download Code">
+                                  <input class="input is-medium" type="text" name="download" value="{{ dcode if 'dcode' in globals().keys() else '' }}" placeholder="Download Code">
                                 </div>
                               </div>
                             <button class="button is-block is-info is-fullwidth is-medium">Download/Check Status</button>

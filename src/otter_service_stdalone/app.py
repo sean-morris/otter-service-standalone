@@ -3,9 +3,6 @@ import tornado.ioloop
 import tornado.web
 import tornado.auth
 import os, uuid
-from subprocess import run
-from tornado.concurrent import Future
-from tornado.httpclient import AsyncHTTPClient
 from otter_service_stdalone import fs_logging as log
 from zipfile import ZipFile, ZIP_DEFLATED
 import asyncio
@@ -41,29 +38,23 @@ class GradeNotebooks():
             # time through - like 20 min for otter-grader
             async with async_timeout.timeout(2000):
                 stdout, stderr = await process.communicate()
-            
-            log.write_logs(f"Grading: Finished: {zip_folder}", "", "info", f'{os.environ.get("ENVIRONMENT")}-logs')
-            
-            for line in stderr.decode('utf-8').split('\n'):
-                if line.strip() == '':
-                    # Ignore empty lines
-                    continue
-                if 'Killed' in line:
-                    # Our container was killed, so let's just skip this one
-                    raise Exception(f"Container was killed -- nothing will work")
+                
+                with open(f"{zip_folder}/grading-output.txt", "w") as f:
+                    for line in stdout.decode().splitlines():
+                        f.write(line + "\n")
+                
+                with open(f"{zip_folder}/grading-logs.txt", "w") as f:
+                    for line in stderr.decode().splitlines():
+                        f.write(line  + "\n")
 
-            with open(f"{zip_folder}/grading-output.txt", "w") as f:
-                for line in stdout.decode().splitlines():
-                    f.write(line + "\n")
-            
-            with open(f"{zip_folder}/grading-logs.txt", "w") as f:
-                for line in stderr.decode().splitlines():
-                    f.write(line  + "\n")
+                log.write_logs(f"Grading: Finished: {zip_folder}", "", "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+
         except asyncio.TimeoutError:
             raise Exception(f'Grading timed out for {zip_folder}')
         except Exception as e:
             raise e  
         return "Grading Done"
+
 
 class Userform(tornado.web.RequestHandler):
     def get(self):
@@ -77,15 +68,17 @@ class Download(tornado.web.RequestHandler):
             msg = f"Please enter the download code to see your result."
             self.render("index.html",  download_message=msg)
         elif not os.path.exists(f"{directory}"):
-            msg = f"The download code appears to not be correct or expired - results are deleted each night: {code}. Please check the code or upload your notebooks and autograder.zip for grading again."
+            msg = f"The download code appears to not be correct or expired - results are deleted regularly: {code}. Please check the code or upload your notebooks and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
         elif not os.path.isfile(f"{directory}/final_grades.csv"):
-            msg = f"The results of your download are not ready yet. Please check back: {code}"
-            self.render("index.html",  download_message=msg)
+            msg = f"The results of your download are not ready yet. Please check back."
+            self.render("index.html",  download_message=msg, dcode=code)
         else:
             with ZipFile(f"{directory}/results.zip", 'w') as zipF:
                 for file in ["final_grades.csv","grading-output.txt","grading-logs.txt"]:
-                    zipF.write(f"{directory}/{file}", file, compress_type=ZIP_DEFLATED)
+                    if os.path.isfile(f"{directory}/{file}"):
+                        zipF.write(f"{directory}/{file}", file, compress_type=ZIP_DEFLATED)
+            
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
             self.set_header('Content-Disposition', f"attachment; filename=results-{code}.zip")
