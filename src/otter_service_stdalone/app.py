@@ -10,6 +10,13 @@ import async_timeout
 
 __UPLOADS__ = "/tmp/uploads"
 
+class BaseHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        user_json = self.get_secure_cookie("user")
+        if not user_json: 
+            return None
+        return user_json
+
 class GradeNotebooks():
     async def grade(self, p, notebooks_zip):
         try:
@@ -55,12 +62,32 @@ class GradeNotebooks():
             raise e  
         return "Grading Done"
 
+class GoogleOAuth2LoginHandler(tornado.web.RequestHandler,
+                               tornado.auth.GoogleOAuth2Mixin):
+    async def get(self):
+        if not self.get_argument('code', False):
+            self.authorize_redirect(
+                redirect_uri='http://grader-dev.data8x.berkeley.edu/login',
+                client_id=self.settings['google_oauth']['key'],
+                scope=["profile","email"],
+                response_type='code',
+                extra_params={'approval_prompt': 'auto'})
+            return
 
-class Userform(tornado.web.RequestHandler):
-    def get(self):
+        user = await self.get_authenticated_user(
+                        redirect_uri='http://grader-dev.data8x.berkeley.edu/login',
+                        code=self.get_argument('code'))
+        self.set_secure_cookie("user", str(user))
+
+        self.redirect("/")
+    
+class Userform(BaseHandler, tornado.web.RequestHandler):
+    @tornado.web.authenticated
+    async def get(self): 
         self.render("index.html",  message=None)
 
-class Download(tornado.web.RequestHandler):
+class Download(BaseHandler, tornado.web.RequestHandler):
+    @tornado.web.authenticated
     async def post(self):
         code = self.get_argument('download')
         directory = f"{__UPLOADS__}/{code}"
@@ -93,7 +120,8 @@ class Download(tornado.web.RequestHandler):
                 except Exception as exc:
                     self.write(exc)
 
-class Upload(tornado.web.RequestHandler):    
+class Upload(BaseHandler,tornado.web.RequestHandler):    
+    @tornado.web.authenticated
     async def post(self):
         g = GradeNotebooks()
         files = self.request.files
@@ -130,10 +158,16 @@ class Upload(tornado.web.RequestHandler):
             self.render("index.html", message=m)
         
 settings = {
-    "cookie_secret": str(uuid.uuid4())
+    "cookie_secret": str(uuid.uuid4()),
+    "google_oauth" : {
+        "key": os.environ.get("OAUTH_CLIENT_ID"),
+        "secret": os.environ.get("OAUTH_SECRET")
+    },
+    "login_url": "/login"
 }
 application = tornado.web.Application([
         (r"/", Userform),
+        (r"/login", GoogleOAuth2LoginHandler),
         (r"/upload", Upload),
         (r"/download", Download),
         ], **settings, debug=True)
