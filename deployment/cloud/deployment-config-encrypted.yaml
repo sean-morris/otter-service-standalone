@@ -4,6 +4,7 @@ metadata:
   name: otter-env
 data:
   ENVIRONMENT: otter-stdalone-dev
+  GRADER_DNS: "{GRADER_URL}"
   VERBOSE_LOGGING: "True"
   GCP_PROJECT_ID: data8x-scratch
   OAUTH_CLIENT_ID: ENC[AES256_GCM,data:tMuFZsZ6VGEXiMjIFuoLwbOjOqOw6MfzEbHa8n8VYLLABsvSJOCoj+w1Kwp2MrFYwZuEAwUKoWiLyAkoC9R/Q7PjzVf0gPeh,iv:luH4ivMuXwjvES2px28GePiamdVupr2o9KK4Js+meSg=,tag:giFxIjXRja0hTcOFpNwbjQ==,type:str]

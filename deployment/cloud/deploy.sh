@@ -5,11 +5,13 @@ branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
 
-JUPYTERHUB_BASE_URL=https://hubv2.data8x.berkeley.edu
+GRADER_URL=http://grader.data8x.berkeley.edu
 if [ "$branch_name" == "staging" ]; then
-    JUPYTERHUB_BASE_URL=https://hubv2-staging.data8x.berkeley.edu
+    GRADER_URL=http://grader-staging.data8x.berkeley.edu
 fi
-JUPYTERHUB_API_URL="$JUPYTERHUB_BASE_URL/hub/api"
+if [ "$branch_name" == "dev" ]; then
+    GRADER_URL=http://grader-dev.data8x.berkeley.edu
+fi
 
 if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     python3 -m build
@@ -39,6 +41,7 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
     kubectl apply -f ./deployment/cloud/deployment-tmp-persistent-volume-claim.yaml
 
     yq eval ".data.ENVIRONMENT=\"$NAMESPACE\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
+    yq eval ".data.GRADER_DNS=\"$GRADER_URL\"" -i ./deployment/cloud/deployment-config-encrypted.yaml
     #we ignore the checksum so that clear text values can be changes for deployments -- like POST_GRADE can can be made false
     #for testing and more
     sops -d --ignore-mac ./deployment/cloud/deployment-config-encrypted.yaml | kubectl apply -f -
@@ -53,7 +56,7 @@ if [ "$branch_name" == "staging" -o "$branch_name" == "prod" -o "$branch_name" =
 
 #     ./deployment/cloud/gcp-workload-identity.sh
     
-#     git checkout -- deployment/cloud/deployment-service.yaml
-#     git checkout -- deployment/cloud/deployment-config-encrypted.yaml
+    git checkout -- deployment/cloud/deployment-service.yaml
+    git checkout -- deployment/cloud/deployment-config-encrypted.yaml
 fi
 rm -f ./kube-context

@@ -65,9 +65,10 @@ class GradeNotebooks():
 class GoogleOAuth2LoginHandler(tornado.web.RequestHandler,
                                tornado.auth.GoogleOAuth2Mixin):
     async def get(self):
+        grader_url = os.environ.get("GRADER_DNS")
         if not self.get_argument('code', False):
             self.authorize_redirect(
-                redirect_uri='http://grader-dev.data8x.berkeley.edu/login',
+                redirect_uri=f"{grader_url}/login",
                 client_id=self.settings['google_oauth']['key'],
                 scope=["profile","email"],
                 response_type='code',
@@ -75,7 +76,7 @@ class GoogleOAuth2LoginHandler(tornado.web.RequestHandler,
             return
 
         user = await self.get_authenticated_user(
-                        redirect_uri='http://grader-dev.data8x.berkeley.edu/login',
+                        redirect_uri=f"{grader_url}/login",
                         code=self.get_argument('code'))
         self.set_secure_cookie("user", str(user))
 
