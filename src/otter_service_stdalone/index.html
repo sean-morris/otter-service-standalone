@@ -27,6 +27,7 @@
                         <p class="title is-3">Grade</p>
                         <p class="subtitle colored is-4">Upload autograder.zip and notebooks</p>
                         <form enctype="multipart/form-data" action="/upload" method="post">
+                            {% module xsrf_form_html() %}
                             <div class="file is-small is-dark has-name">
                                 <label class="file-label">
                                   <input class="file-input" type="file" name="autograder">
@@ -71,6 +72,7 @@
                         <p class="title is-3">Results</p>
                         <p class="subtitle colored is-4">Check Status and Download</p>
                         <form enctype="multipart/form-data" action="/download" method="post">
+                            {% module xsrf_form_html() %}
                             <div class="field">
                                 <div class="control">
                                   <input class="input is-medium" type="text" name="download" value="{{ dcode if 'dcode' in globals().keys() else '' }}" placeholder="Download Code">
