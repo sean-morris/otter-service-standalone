@@ -1,0 +1,103 @@
+# Default values for otter-service-stdalone.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+nameOverride: "otter-srv-stdalone"
+fullnameOverride: "otter-pod"
+
+otter_srv_stdalone:
+  name: otter-srv-stdalone
+  repository: gcr.io/data8x-scratch/otter-srv-stdalone
+  pullPolicy: Always
+  tag: "latest"
+  resources:
+    limits:
+      cpu: 200m
+      ephemeral-storage: 1Gi
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      ephemeral-storage: 1Gi
+      memory: 1Gi
+  ports:
+    - name: http
+      containerPort: 80
+      protocol: TCP
+  volumeMounts:
+    - name: opt-volume
+      mountPath: /opt
+    - name: tmp-volume
+      mountPath: /tmp
+  env:
+    - name: DOCKER_HOST 
+      value: tcp://localhost:2375
+    - name: DOCKER_CLI_EXPERIMENTAL
+      value: enabled
+  envFrom:
+    - configMapRef:
+        name: otter-env
+
+dind_image:
+  name: otter-dind
+  image: docker:20-dind
+  args: ["--tls=false"]
+  imagePullPolicy: Always
+  securityContext: 
+    privileged: true 
+  resources:
+    limits:
+      cpu: 200m
+      ephemeral-storage: 1Gi
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      ephemeral-storage: 1Gi
+      memory: 1Gi
+  volumeMounts:
+    - name: opt-volume
+      mountPath: /opt
+    - name: tmp-volume
+      mountPath: /tmp
+  env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
+
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: otter-stdalone-sa@data8x-scratch.iam.gserviceaccount.com
+  name: "otter-stdalone-k8-sa"
+
+
+service:
+  name: otter-lb
+  enabled: true
+  type: LoadBalancer
+  loadBalancerIP: "34.134.165.169"
+  port: 80
+  targetPort: 80
+
+autoscaling:
+  apiVersion: autoscaling/v1
+  enabled: true
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: otter-pod
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+storageClass:
+  name: otter-storage-class
+  accessModes: ReadWriteOnce
+  storageRequest: 1Gi
+
+volume_claims:
+  - otter-opt-volume-claim
+  - otter-tmp-volume-claim
+
+ingress: {}
+

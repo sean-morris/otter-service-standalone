@@ -5,7 +5,7 @@ branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
 
-GRADER_URL=http://grader.data8x.berkeley.edu
+GRADER_URL=http://grader-prod.data8x.berkeley.edu
 if [ "$branch_name" == "staging" ]; then
     GRADER_URL=http://grader-staging.data8x.berkeley.edu
 fi
