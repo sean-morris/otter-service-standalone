@@ -1,9 +1,6 @@
 service:
   load_balancer_ip: 35.193.0.244
 otter_env:
-  name: otter-env
   parameters:
-    verbose_logging: "True"
-    gcp_project_id: data8x-scratch
-    environment: otter-stdalone-dev
+    environment: otter-stdalone-staging
     grader_dns: http://grader-staging.data8x.berkeley.edu

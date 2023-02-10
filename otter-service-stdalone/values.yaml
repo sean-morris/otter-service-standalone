@@ -87,6 +87,7 @@ volume_claims:
 otter_env:
   name: otter-env
   parameters:
+    verbose_logging: \"True\"
     gcp_project_id: data8x-scratch
 
 service:
