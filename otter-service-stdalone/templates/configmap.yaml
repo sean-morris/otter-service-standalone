@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.otter_env.name }}
+data:
+  ENVIRONMENT: {{ .Values.otter_env.parameters.environment }}
+  GCP_PROJECT_ID: {{ .Values.otter_env.parameters.gcp_project_id }}
+  GRADER_DNS: {{ .Values.otter_env.parameters.grader_dns }}

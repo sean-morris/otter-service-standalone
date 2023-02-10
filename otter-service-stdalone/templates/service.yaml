@@ -11,6 +11,6 @@ spec:
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       name: http
-  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.load_balancer_ip }}
   selector:
     {{- include "otter-service-stdalone.selectorLabels" . | nindent 4 }}

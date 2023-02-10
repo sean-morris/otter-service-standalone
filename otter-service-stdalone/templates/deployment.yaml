@@ -61,6 +61,13 @@ spec:
             {{- toYaml .Values.dind_image.volumeMounts | nindent 12 }}
           env:
             {{- toYaml .Values.dind_image.env | nindent 12 }}
+      volumes:
+        - name: opt-volume
+          persistentVolumeClaim:
+            claimName: {{ index .Values.volume_claims.names 0 }}
+        - name: tmp-volume
+          persistentVolumeClaim:
+            claimName: {{ index .Values.volume_claims.names 1 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
