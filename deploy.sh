@@ -10,5 +10,5 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     # if breaks on Permission denied run: gcloud auth login
     gcloud builds submit --substitutions=_GITHUB_KEY=$github_key,_TAG_NAME=$version --config cloudbuild.yaml
 fi
-helm upgrade --install otter-srv otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.dev.yaml --namespace otter-stdalone-$branch_name
+helm upgrade --install otter-srv otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --namespace otter-stdalone-$branch_name
 
