@@ -8,15 +8,15 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: {{ .Values.updateStrategy }}
   selector:
     matchLabels:
       {{- include "otter-service-stdalone.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        rollme: {{ randAlphaNum 5 | quote }}
       labels:
         {{- include "otter-service-stdalone.selectorLabels" . | nindent 8 }}
     spec:
@@ -33,14 +33,6 @@ spec:
           imagePullPolicy: {{ .Values.otter_srv_stdalone.pullPolicy }}
           ports:
             {{- toYaml .Values.otter_srv_stdalone.ports | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
           resources:
             {{- toYaml .Values.otter_srv_stdalone.resources | nindent 12 }}
           volumeMounts:
