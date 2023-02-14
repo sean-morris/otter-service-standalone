@@ -1,3 +1,4 @@
+branch: staging
 service:
   load_balancer_ip: 35.193.0.244
 otter_env:
