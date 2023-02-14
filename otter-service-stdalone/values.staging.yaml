@@ -1,0 +1,6 @@
+service:
+  load_balancer_ip: 35.193.0.244
+otter_env:
+  parameters:
+    environment: otter-stdalone-staging
+    grader_dns: http://grader-staging.data8x.berkeley.edu

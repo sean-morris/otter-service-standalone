@@ -1,0 +1,6 @@
+service:
+  load_balancer_ip: 35.224.71.117
+otter_env:
+  parameters:
+    environment: otter-stdalone-prod
+    grader_dns: http://grader-prod.data8x.berkeley.edu

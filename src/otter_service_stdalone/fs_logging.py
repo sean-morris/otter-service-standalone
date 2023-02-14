@@ -25,7 +25,7 @@ def get_timestamp():
     return date.strftime(date_format)[:-3]
 
 def write_logs(msg, trace, type, collection):
-    if os.getenv("VERBOSE_LOGGING") == "True" or type == "error":
+    if os.getenv("VERBOSE_LOGGING") == "true" or type == "error":
         try:
             db = firestore.client()
             # this redirects FireStore to local emulator when local testing!

@@ -55,7 +55,6 @@ class GradeNotebooks():
             raise e  
         return "Grading Done"
 
-        self.redirect("/")
     
 class Userform(tornado.web.RequestHandler):
     async def get(self): 
