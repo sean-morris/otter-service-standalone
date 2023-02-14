@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
+updateStrategy: RollingUpdate
 
 nameOverride: "otter-srv-stdalone"
 fullnameOverride: "otter-pod"
@@ -87,7 +88,7 @@ volume_claims:
 otter_env:
   name: otter-env
   parameters:
-    verbose_logging: \"True\"
+    verbose_logging: True
     gcp_project_id: data8x-scratch
 
 service:
