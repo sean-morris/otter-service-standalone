@@ -1,3 +1,4 @@
+branch: prod
 service:
   load_balancer_ip: 35.224.71.117
 otter_env:

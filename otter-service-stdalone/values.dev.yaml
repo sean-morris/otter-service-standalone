@@ -1,7 +1,9 @@
+branch: dev
 service:
   load_balancer_ip: 34.134.165.169
 
 otter_env:
+  name: otter-env-dev
   parameters:
     environment: otter-stdalone-dev
     grader_dns: http://grader-dev.data8x.berkeley.edu
