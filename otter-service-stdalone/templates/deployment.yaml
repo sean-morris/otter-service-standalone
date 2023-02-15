@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "otter-service-stdalone.fullname" . }}-{{ .Values.branch }}
+  name: {{ include "otter-service-stdalone.fullname" . }}
   labels:
     {{- include "otter-service-stdalone.labels" . | nindent 4 }}
 spec:
