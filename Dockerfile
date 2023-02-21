@@ -17,6 +17,7 @@ RUN apt-get install -y python3 && \
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
+ADD ./docker-pull-otter.sh /opt/docker-pull-otter.sh
 ADD ./requirements.txt /opt/otter-service-stdalone/requirements.txt
 RUN python3 -m pip install -r /opt/otter-service-stdalone/requirements.txt
 RUN python3 -m pip install otter-service-stdalone

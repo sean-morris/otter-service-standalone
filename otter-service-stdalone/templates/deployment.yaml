@@ -28,19 +28,6 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Values.otter_srv_stdalone.name }}
-          image: "{{ .Values.otter_srv_stdalone.repository }}:{{ .Values.otter_srv_stdalone.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.otter_srv_stdalone.pullPolicy }}
-          ports:
-            {{- toYaml .Values.otter_srv_stdalone.ports | nindent 12 }}
-          resources:
-            {{- toYaml .Values.otter_srv_stdalone.resources | nindent 12 }}
-          volumeMounts:
-            {{- toYaml .Values.otter_srv_stdalone.volumeMounts | nindent 12 }}
-          env:
-            {{- toYaml .Values.otter_srv_stdalone.env | nindent 12 }}
-          envFrom:
-            {{- toYaml .Values.otter_srv_stdalone.envFrom | nindent 12 }}
         - name: {{ .Values.dind_image.name }}
           securityContext:
             {{- toYaml .Values.dind_image.securityContext | nindent 12 }}
@@ -53,6 +40,24 @@ spec:
             {{- toYaml .Values.dind_image.volumeMounts | nindent 12 }}
           env:
             {{- toYaml .Values.dind_image.env | nindent 12 }}
+        - name: {{ .Values.otter_srv_stdalone.name }}
+          image: "{{ .Values.otter_srv_stdalone.repository }}:{{ .Values.otter_srv_stdalone.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.otter_srv_stdalone.pullPolicy }}
+          ports:
+            {{- toYaml .Values.otter_srv_stdalone.ports | nindent 12 }}
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "/opt/docker-pull-otter.sh"]
+          resources:
+            {{- toYaml .Values.otter_srv_stdalone.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.otter_srv_stdalone.volumeMounts | nindent 12 }}
+          env:
+            {{- toYaml .Values.otter_srv_stdalone.env | nindent 12 }}
+          envFrom:
+            {{- toYaml .Values.otter_srv_stdalone.envFrom | nindent 12 }}
+        
       volumes:
         - name: opt-volume
           persistentVolumeClaim:
