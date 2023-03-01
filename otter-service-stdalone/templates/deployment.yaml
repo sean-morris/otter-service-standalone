@@ -48,7 +48,7 @@ spec:
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "/opt/docker-pull-otter.sh"]
+                command: ["/bin/sh", "-c", "/etc/otter-service-stdalone/docker-pull-otter.sh"]
           resources:
             {{- toYaml .Values.otter_srv_stdalone.resources | nindent 12 }}
           volumeMounts:
