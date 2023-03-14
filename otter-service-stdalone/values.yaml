@@ -36,9 +36,6 @@ otter_srv_stdalone:
       value: tcp://localhost:2375
     - name: DOCKER_CLI_EXPERIMENTAL
       value: enabled
-  envFrom:
-    - configMapRef:
-        name: otter-env
 
 dind_image:
   name: otter-dind

@@ -38,6 +38,15 @@ RUN echo \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 RUN apt-get update
 RUN apt-get -y install docker-ce-cli=${DOCKER_VERSION}
+RUN apt-get -y install unzip
+RUN apt install -y python3.8-venv
+
+ADD ./deployment/autograder.zip /etc/otter-service-stdalone
+ADD ./deployment/notebooks.zip /etc/otter-service-stdalone
+ADD ./deployment/autograder-3.3.0.zip /etc/otter-service-stdalone
+ADD ./deployment/notebooks-3.3.0.zip /etc/otter-service-stdalone
+RUN unzip /etc/otter-service-stdalone/notebooks.zip -d /etc/otter-service-stdalone/notebooks/
+RUN unzip /etc/otter-service-stdalone/notebooks-3.3.0.zip -d /etc/otter-service-stdalone/notebooks-3.3.0/
 
 COPY ./docker-pull-otter.sh /etc/otter-service-stdalone
 RUN chmod 755 /etc/otter-service-stdalone/docker-pull-otter.sh

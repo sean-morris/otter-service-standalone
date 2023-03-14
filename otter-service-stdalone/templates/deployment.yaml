@@ -45,10 +45,10 @@ spec:
           imagePullPolicy: {{ .Values.otter_srv_stdalone.pullPolicy }}
           ports:
             {{- toYaml .Values.otter_srv_stdalone.ports | nindent 12 }}
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/sh", "-c", "/etc/otter-service-stdalone/docker-pull-otter.sh"]
+          # lifecycle:
+          #   postStart:
+          #     exec:
+          #       command: ["/bin/sh", "-c", "echo hello"]
           resources:
             {{- toYaml .Values.otter_srv_stdalone.resources | nindent 12 }}
           volumeMounts:
