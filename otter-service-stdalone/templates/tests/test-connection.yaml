@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "otter-service-stdalone.fullname" . }}-test-connection"
+  labels:
+    {{- include "otter-service-stdalone.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "otter-service-stdalone.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never

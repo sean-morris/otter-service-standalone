@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.otter_env.name }}-{{ .Values.branch }}
+data:
+  ENVIRONMENT: {{ .Values.otter_env.parameters.environment }}
+  VERBOSE_LOGGING: "{{ .Values.otter_env.parameters.verbose_logging }}"
+  GCP_PROJECT_ID: {{ .Values.otter_env.parameters.gcp_project_id }}
+  GRADER_DNS: {{ .Values.otter_env.parameters.grader_dns }}
