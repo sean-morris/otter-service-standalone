@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.certificate.name }}
+spec:
+  secretName: {{ .Values.certificate.secret }}
+  issuerRef:
+    kind: Issuer
+    name: {{ .Values.issuer.acme_name }}
+  commonName: {{ .Values.certificate.dns }}
+  dnsNames:
+    - {{ .Values.certificate.dns }}
