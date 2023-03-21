@@ -107,5 +107,15 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
 
 
-ingress: {}
+ingress:
+  name: otter-stdalone-ingress 
+
+issuer:
+  acme_server: https://acme-v02.api.letsencrypt.org/directory
+  acme_email: datahub-support@berkeley.edu
+  acme_name: letsencrypt
+
+certificate:
+  name: le-crt
+  secret: tls-secret
 
