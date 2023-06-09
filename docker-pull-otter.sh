@@ -1,10 +1,7 @@
 #!/bin/bash
-while (! docker stats --no-stream ); do
-  echo "Waiting for Docker to launch..."
-  sleep 1
-done
 # These are the most common notebooks out there 
 # If you load this first then users cna quickly grade
 # notebooks 
-docker pull ucbdsinfra/otter-grader:3.3.0
-docker pull ucbdsinfra/otter-grader:v4.2.1
+/etc/venv-otter4/bin/python3 -m otter grade -a /etc/otter-service-stdalone/autograder.zip -p /etc/otter-service-stdalone/notebooks
+/etc/venv-otter3/bin/python3 -m otter grade -a /etc/otter-service-stdalone/autograder-3.3.0.zip -p /etc/otter-service-stdalone/notebooks-3.3.0
+otter_service_stdalone
