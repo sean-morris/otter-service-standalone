@@ -62,9 +62,9 @@ EXPOSE 80
 FROM base as image-local
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
 RUN python3 -m pip install /opt/otter-service-stdalone/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz
-ENTRYPOINT ["otter_service_stdalone"]
+ENTRYPOINT ["/etc/otter-service-stdalone/docker-pull-otter.sh"]
 
 FROM base as image-cloud
 RUN python3 -m pip install otter-service-stdalone
-ENTRYPOINT ["otter_service_stdalone"]
+ENTRYPOINT ["/etc/otter-service-stdalone/docker-pull-otter.sh"]
 
