@@ -11,13 +11,32 @@ import async_timeout
 __UPLOADS__ = "/tmp/uploads"
 
 class GradeNotebooks():
+    def get_otter_version(self, auto_path):
+        zip_folder = auto_path.split(".")[0]
+        with ZipFile(auto_path, 'r') as zObject:
+            zObject.extractall(path=zip_folder)
+        with open(f"{zip_folder}/requirements.txt") as file:
+            for line in file:
+                if "otter-grader" in line:
+                    version = line.split("==")[1].split(".")[0]
+                    log.write_logs("Preparation: Grading", f"Otter Version: {version}", "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+                    if int(version) < 3:
+                        log.write_logs("Preparation: Grading", f"Otter Version less than 3: {version} - changed to version 3", "info", f'{os.environ.get("ENVIRONMENT")}-logs')
+                        version = "3"
+                    
+                    return version
+        return Exception("Otter-Grader version not found in requirements")
+    
     async def grade(self, p, notebooks_zip):
         try:
             zip_folder = notebooks_zip.split(".")[0]
             with ZipFile(notebooks_zip, 'r') as zObject:
                 zObject.extractall(path=zip_folder)
             
+            otter_version = self.get_otter_version(p)
+            path = f"/etc/venv-otter{otter_version}/bin/python3"
             command = [
+                path, "-m"
                 'otter', 'grade',
                 '-a', p,
                 '-p', zip_folder,
@@ -100,7 +119,6 @@ class Upload(tornado.web.RequestHandler):
         autograder = self.request.files['autograder'][0] if "autograder" in files else None
         notebooks = self.request.files['notebooks'][0] if "notebooks" in files else None
         if autograder is not None and notebooks is not None:
-            print("fileinfo is: ", autograder)
             notebooks_fname = notebooks['filename']
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
             results_path = str(uuid.uuid4())
