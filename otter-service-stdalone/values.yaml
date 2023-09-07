@@ -70,14 +70,14 @@ serviceAccount:
   name: "otter-stdalone-k8-sa"
 
 storageClass:
-  create: true
+  create: false
   name: otter-storage-class
   accessModes: ReadWriteOnce
   storageRequest: 1Gi
   type: pd-standard
 
 volume_claims:
-  create: true
+  create: false
   names:
     - otter-opt-volume-claim
     - otter-tmp-volume-claim
