@@ -18,3 +18,5 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
 fi
 helm upgrade --install otter-srv --set otter_srv_stdalone.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --namespace otter-stdalone-$branch_name --skip-crds 
 
+#helm install otter-srv --set otter_srv_stdalone.tag=0.1.0 otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.dev.yaml --create-namespace --namespace otter-stdalone-dev --skip-crds 
+

@@ -40,18 +40,12 @@ RUN apt-get update
 RUN apt-get -y install docker-ce-cli=${DOCKER_VERSION}
 RUN apt-get -y install unzip
 RUN apt install -y python3.8-venv
-RUN python3 -m venv /etc/venv-otter3
-RUN /etc/venv-otter3/bin/pip install -r /etc/otter-service-stdalone/requirements.txt
-RUN /etc/venv-otter3/bin/pip install otter-grader==3.3.0
-RUN python3 -m venv /etc/venv-otter4
-RUN /etc/venv-otter4/bin/pip install -r /etc/otter-service-stdalone/requirements.txt
+
+RUN python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
 
 ADD ./deployment/autograder.zip /etc/otter-service-stdalone
 ADD ./deployment/notebooks.zip /etc/otter-service-stdalone
-ADD ./deployment/autograder-3.3.0.zip /etc/otter-service-stdalone
-ADD ./deployment/notebooks-3.3.0.zip /etc/otter-service-stdalone
 RUN unzip /etc/otter-service-stdalone/notebooks.zip -d /etc/otter-service-stdalone/notebooks/
-RUN unzip /etc/otter-service-stdalone/notebooks-3.3.0.zip -d /etc/otter-service-stdalone/notebooks-3.3.0/
 
 COPY ./docker-pull-otter.sh /etc/otter-service-stdalone
 RUN chmod 755 /etc/otter-service-stdalone/docker-pull-otter.sh
