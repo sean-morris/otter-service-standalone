@@ -43,22 +43,15 @@ RUN apt install -y python3.8-venv
 
 RUN python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
 
-ADD ./deployment/autograder.zip /etc/otter-service-stdalone
-ADD ./deployment/notebooks.zip /etc/otter-service-stdalone
-RUN unzip /etc/otter-service-stdalone/notebooks.zip -d /etc/otter-service-stdalone/notebooks/
-
-COPY ./docker-pull-otter.sh /etc/otter-service-stdalone
-RUN chmod 755 /etc/otter-service-stdalone/docker-pull-otter.sh
-
 WORKDIR /opt
 EXPOSE 80
 
 FROM base as image-local
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
 RUN python3 -m pip install /opt/otter-service-stdalone/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz
-ENTRYPOINT ["/etc/otter-service-stdalone/docker-pull-otter.sh"]
+ENTRYPOINT ["otter_service_stdalone"]
 
 FROM base as image-cloud
-RUN python3 -m pip install otter-service-stdalone
-ENTRYPOINT ["/etc/otter-service-stdalone/docker-pull-otter.sh"]
+RUN python3 -m pip install otter-service-stdalone==${OTTER_SERVICE_STDALONE_VERSION}
+ENTRYPOINT ["otter_service_stdalone"]
 
