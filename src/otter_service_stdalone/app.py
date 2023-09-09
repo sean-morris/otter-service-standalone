@@ -24,6 +24,7 @@ class GradeNotebooks():
                 '-a', p,
                 '-p', zip_folder,
                 "--ext", "ipynb",
+                "--containers", "10",
                 "-o", zip_folder,
                 "-v"
             ]

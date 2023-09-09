@@ -15,13 +15,13 @@ otter_srv_stdalone:
   tag: "latest"
   resources:
     limits:
-      cpu: 200m
+      cpu: 500m
       ephemeral-storage: 1Gi
-      memory: 6Gi
+      memory: 2Gi
     requests:
-      cpu: 200m
+      cpu: 500m
       ephemeral-storage: 1Gi
-      memory: 4Gi
+      memory: 1Gi
   ports:
     - name: http
       containerPort: 80
@@ -47,13 +47,13 @@ dind_image:
     privileged: true 
   resources:
     limits:
-      cpu: 200m
+      cpu: 2500m
       ephemeral-storage: 1Gi
-      memory: 6Gi
+      memory: 8Gi
     requests:
-      cpu: 200m
+      cpu: 2500m
       ephemeral-storage: 1Gi
-      memory: 4Gi
+      memory: 5Gi
   volumeMounts:
     - name: opt-volume
       mountPath: /opt
@@ -70,14 +70,14 @@ serviceAccount:
   name: "otter-stdalone-k8-sa"
 
 storageClass:
-  create: false
+  create: true
   name: otter-storage-class
   accessModes: ReadWriteOnce
   storageRequest: 1Gi
   type: pd-standard
 
 volume_claims:
-  create: false
+  create: true
   names:
     - otter-opt-volume-claim
     - otter-tmp-volume-claim
