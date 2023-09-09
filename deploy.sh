@@ -12,7 +12,7 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     #for local dev
     yq eval ".services.app.build.args.OTTER_SERVICE_STDALONE_VERSION=\"$version\"" -i docker-compose.yml
     # if breaks on Permission denied run: gcloud auth login
-    docker build --target image-cloud --build-arg BUILD_VERSION=cloud -t gcr.io/data8x-scratch/otter-srv-stdalone:$version -t gcr.io/data8x-scratch/otter-srv-stdalone . 
+    docker build --target image-cloud --build-arg BUILD_VERSION=cloud --build-arg OTTER_SERVICE_STDALONE_VERSION=$version -t gcr.io/data8x-scratch/otter-srv-stdalone:$version -t gcr.io/data8x-scratch/otter-srv-stdalone . 
     docker push gcr.io/data8x-scratch/otter-srv-stdalone:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone
 fi
