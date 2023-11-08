@@ -10,6 +10,9 @@ spec:
   {{- end }}
   strategy:
     type: {{ .Values.updateStrategy }}
+    rollingUpdate:
+         maxSurge: 0
+         maxUnavailable: 1
   selector:
     matchLabels:
       {{- include "otter-service-stdalone.selectorLabels" . | nindent 6 }}
@@ -28,6 +31,15 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
+        - name: {{ .Values.otter_srv_remove_uploads_cron.name }}
+          securityContext:
+            {{- toYaml .Values.otter_srv_remove_uploads_cron.securityContext | nindent 12 }}
+          image: "{{ .Values.otter_srv_remove_uploads_cron.repository }}:{{ .Values.otter_srv_remove_uploads_cron.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.otter_srv_remove_uploads_cron.pullPolicy }}
+          resources:
+            {{- toYaml .Values.otter_srv_remove_uploads_cron.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.otter_srv_remove_uploads_cron.volumeMounts | nindent 12 }}
         - name: {{ .Values.dind_image.name }}
           securityContext:
             {{- toYaml .Values.dind_image.securityContext | nindent 12 }}
