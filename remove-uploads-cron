@@ -1,0 +1,1 @@
+0 2 * * * find /tmp/uploads -type f -mtime +7 -execdir rm -- '{}' \; >> /var/log/remove-uploads.log 2>&1

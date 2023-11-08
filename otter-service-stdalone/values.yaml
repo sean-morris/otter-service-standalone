@@ -8,6 +8,28 @@ updateStrategy: RollingUpdate
 nameOverride: "otter-srv-stdalone"
 fullnameOverride: "otter-pod"
 
+otter_srv_remove_uploads_cron:
+  name: otter-srv-stdalone-remove-uploads-cron
+  repository: gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron
+  pullPolicy: Always
+  tag: "latest"
+  securityContext: 
+    privileged: true 
+  resources:
+    limits:
+      cpu: 100m
+      ephemeral-storage: 100M
+      memory: 100M
+    requests:
+      cpu: 100m
+      ephemeral-storage: 100M
+      memory: 100M
+  volumeMounts:
+    - name: opt-volume
+      mountPath: /opt
+    - name: tmp-volume
+      mountPath: /tmp
+
 otter_srv_stdalone:
   name: otter-srv-stdalone
   repository: gcr.io/data8x-scratch/otter-srv-stdalone
@@ -85,7 +107,7 @@ volume_claims:
 otter_env:
   name: otter-env
   parameters:
-    verbose_logging: True
+    verbose_logging: true
     gcp_project_id: data8x-scratch
 
 service:
