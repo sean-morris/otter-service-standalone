@@ -12,11 +12,21 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     #for local dev
     yq eval ".services.app.build.args.OTTER_SERVICE_STDALONE_VERSION=\"$version\"" -i docker-compose.yml
     # if breaks on Permission denied run: gcloud auth login
+    # build and push otter-srv-stdalone
     docker build --target image-cloud --build-arg BUILD_VERSION=cloud --build-arg OTTER_SERVICE_STDALONE_VERSION=$version -t gcr.io/data8x-scratch/otter-srv-stdalone:$version -t gcr.io/data8x-scratch/otter-srv-stdalone . 
     docker push gcr.io/data8x-scratch/otter-srv-stdalone:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone
-fi
-helm upgrade --install otter-srv --set otter_srv_stdalone.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --namespace otter-stdalone-$branch_name --skip-crds 
 
-#helm install otter-srv --set otter_srv_stdalone.tag=0.1.0 otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.dev.yaml --create-namespace --namespace otter-stdalone-dev --skip-crds 
+    # build and push otter-srv-stdalone-remove-uploads-cron
+    docker build -t gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version -t gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron -f Dockerfile-remove-uploads-cron .
+    docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version
+    docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron
+fi
+ns=$(kubectl get namespaces | grep otter-stdalone-${branch_name})
+if [[ $ns == *"otter-stdalone-${branch_name}"* ]]; then
+    helm upgrade --install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --namespace otter-stdalone-$branch_name --skip-crds 
+else
+    # Use this when namespace completely deleted
+    helm install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --create-namespace --namespace otter-stdalone-$branch_name --skip-crds 
+fi
 

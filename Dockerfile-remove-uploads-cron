@@ -1,0 +1,19 @@
+FROM ubuntu:20.04 AS base
+
+# Install cron
+RUN apt-get update && apt-get -y install cron
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the cron file to the container
+COPY remove-uploads-cron /etc/cron.d/cronfile
+
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/cronfile
+
+# Apply the cron job
+RUN crontab /etc/cron.d/cronfile
+
+# Start the cron daemon in the foreground
+CMD ["cron", "-f"]
