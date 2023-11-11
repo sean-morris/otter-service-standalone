@@ -10,6 +10,9 @@ spec:
   {{- end }}
   strategy:
     type: {{ .Values.updateStrategy }}
+    rollingUpdate:
+         maxSurge: 0
+         maxUnavailable: 1
   selector:
     matchLabels:
       {{- include "otter-service-stdalone.selectorLabels" . | nindent 6 }}

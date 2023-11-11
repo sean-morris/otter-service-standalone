@@ -99,7 +99,6 @@ storageClass:
   type: pd-standard
 
 volume_claims:
-  create: true
   names:
     - otter-opt-volume-claim
     - otter-tmp-volume-claim
@@ -125,7 +124,7 @@ autoscaling:
     kind: Deployment
     name: otter-pod
   minReplicas: 1
-  maxReplicas: 1
+  maxReplicas: 2
   targetCPUUtilizationPercentage: 80
 
 

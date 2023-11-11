@@ -13,3 +13,5 @@ certificate:
   dns: grader-staging.datahub.berkeley.edu
 ingress:
   static_ip_name: "otter-stdalone-ip-staging"
+volume_claims:
+  create: true
