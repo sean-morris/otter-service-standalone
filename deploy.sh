@@ -22,8 +22,11 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron
 fi
-helm upgrade --install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --namespace otter-stdalone-$branch_name --skip-crds 
-
-# Use this when namespace completely deleted
-#helm install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --create-namespace --namespace otter-stdalone-$branch_name --skip-crds 
+ns=$(kubectl get namespaces | grep otter-stdalone-${branch_name})
+if [[ $ns == *"otter-stdalone-${branch_name}"* ]]; then
+    helm upgrade --install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --namespace otter-stdalone-$branch_name --skip-crds 
+else
+    # Use this when namespace completely deleted
+    helm install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --create-namespace --namespace otter-stdalone-$branch_name --skip-crds 
+fi
 
