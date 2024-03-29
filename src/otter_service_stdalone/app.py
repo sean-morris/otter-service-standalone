@@ -4,146 +4,120 @@ import tornado.web
 import tornado.auth
 import os
 import uuid
-from otter_service_stdalone import fs_logging as log, upload_handle as uh
+from otter_service_stdalone import fs_logging as log
+from otter_service_stdalone import user_auth as u_auth
+from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
-import asyncio
-import async_timeout
+
 
 __UPLOADS__ = "/tmp/uploads"
+log_coll = f'{os.environ.get("ENVIRONMENT")}-debug'
+state = str(uuid.uuid4())  # used to protect against cross-site request forgery attacks.
 
 
-class GradeNotebooks():
-    """The class contains the async grade method for executing
-        otter grader
-    """
-    async def grade(self, p, notebooks_path, results_id):
-        """Calls otter grade asynchronously and writes the various log files
-        and results of grading generating by otter-grader
-
-        Args:
-            p (str): the path to autograder.zip -- the solutions
-            notebooks_path (str): the path to the folder of notebooks to be graded
-            results_id (str): used for identifying logs
-
-        Raises:
-            Exception: Timeout Exception is raised if async takes longer than 20 min
-
-        Returns:
-            boolean: True is the process completes; otherwise an Exception is thrown
-        """
-        try:
-            notebook_folder = uh.handle_upload(notebooks_path, results_id)
-            log.write_logs(results_id, "Step 5: Notebook Folder configured for grader",
-                           f"Notebook Folder: {notebook_folder}",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
-            command = [
-                'otter', 'grade',
-                '-a', p,
-                '-p', notebook_folder,
-                "--ext", "ipynb",
-                "--containers", "10",
-                "-o", notebook_folder,
-                "-v"
-            ]
-            log.write_logs(results_id, f"Step 6: Grading Start: {notebook_folder}",
-                           " ".join(command),
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
-            process = await asyncio.create_subprocess_exec(
-                *command,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-
-            # this is waiting for communication back from the process
-            # some images are quite big and take some time to build the first
-            # time through - like 20 min for otter-grader
-            async with async_timeout.timeout(2000):
-                stdout, stderr = await process.communicate()
-
-                with open(f"{notebook_folder}/grading-output.txt", "w") as f:
-                    for line in stdout.decode().splitlines():
-                        f.write(line + "\n")
-                log.write_logs(results_id, "Step 7: Grading: Finished: Write: grading-output.txt",
-                               f"{notebook_folder}/grading-output.txt",
-                               "debug",
-                               f'{os.environ.get("ENVIRONMENT")}-debug')
-                with open(f"{notebook_folder}/grading-logs.txt", "w") as f:
-                    for line in stderr.decode().splitlines():
-                        f.write(line + "\n")
-                log.write_logs(results_id, "Step 8: Grading: Finished: Write grading-logs.txt",
-                               f"{notebook_folder}/grading-logs.txt",
-                               "debug",
-                               f'{os.environ.get("ENVIRONMENT")}-debug')
-                log.write_logs(results_id, f"Step 9: Grading: Finished: {notebook_folder}",
-                               " ".join(command),
-                               "debug",
-                               f'{os.environ.get("ENVIRONMENT")}-debug')
-                log.write_logs(results_id, f"Grading: Finished: {notebook_folder}",
-                               " ".join(command),
-                               "info",
-                               f'{os.environ.get("ENVIRONMENT")}-logs')
-                return True
-        except asyncio.TimeoutError:
-            raise Exception(f'Grading timed out for {notebook_folder}')
-        except Exception as e:
-            raise e
-
-
-class Userform(tornado.web.RequestHandler):
-    """This is the initial landing page for application
+class LoginHandler(tornado.web.RequestHandler):
+    """Initiaties login auth by authorizing access to github auth api
 
     Args:
         tornado (tornado.web.RequestHandler): The request handler
     """
     async def get(self):
-        """renders index.html on a GET HTTP request
-        """
-        self.render("index.html",  message=None)
+        await u_auth.handle_authorization(self, state)
 
 
-class Download(tornado.web.RequestHandler):
+class GitHubOAuthHandler(tornado.web.RequestHandler):
+    """Handles GitHubOAuth
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    async def get(self):
+        code = self.get_argument('code', False)
+        arg_state = self.get_argument('state', False)
+        access_token = await u_auth.get_acess_token(arg_state, state, code)
+        if access_token:
+            user = await u_auth.get_github_username(access_token)
+            is_org_member = await u_auth.handle_is_org_member(access_token, user)
+            if is_org_member:
+                self.set_secure_cookie("user", user, expires_days=7)
+                self.redirect("/")
+            else:
+                m = "You are not part of the group that can access this application. "
+                m += "Please email: sean.smorris@berkeley.edu"
+                self.write(m)
+        else:
+            m = "We were unable to establish access to this applicaiton. "
+            m += "Please email: sean.smorris@berkeley.edu"
+            self.write(m)
+
+
+class BaseHandler(tornado.web.RequestHandler):
+    """This is the super class for the handlers. get_current_user is called by
+    any handler that decorated with @tornado.web.authenticated
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def get_current_user(self):
+        return self.get_secure_cookie("user")
+
+
+class MainHandler(BaseHandler):
+    """This is the initial landing page for application
+
+    Args:
+        BaseHandler (BaseHandler): super class
+    """
+    @tornado.web.authenticated
+    async def get(self):
+        self.render("index.html", message=None)
+
+
+class Download(BaseHandler):
     """The class handling a request to download results
 
     Args:
         tornado (tornado.web.RequestHandler): The download request handler
     """
+    @tornado.web.authenticated
+    def get(self):
+        self.render("index.html", message=None)
+
+    @tornado.web.authenticated
     async def post(self):
         """the post method that accepts the code used to locate the results
         the user wants to download
         """
-        code = self.get_argument('download')
-        directory = f"{__UPLOADS__}/{code}"
-        if code == "":
-            log.write_logs(code, "Download: Code Not Given!",
-                           f"{code}",
+        download_code = self.get_argument('download')
+        directory = f"{__UPLOADS__}/{download_code}"
+        if download_code == "":
+            log.write_logs(download_code, "Download: Code Not Given!",
+                           f"{download_code}",
                            "debug",
                            f'{os.environ.get("ENVIRONMENT")}-debug')
             msg = "Please enter the download code to see your result."
             self.render("index.html",  download_message=msg)
         elif not os.path.exists(f"{directory}"):
-            log.write_logs(code, "Download: Directory for Code Not existing",
-                           f"{code}",
+            log.write_logs(download_code, "Download: Directory for Code Not existing",
+                           f"{download_code}",
                            "debug",
                            f'{os.environ.get("ENVIRONMENT")}-debug')
             msg = "The download code appears to not be correct or expired "
-            msg += f"- results are deleted regularly: {code}."
+            msg += f"- results are deleted regularly: {download_code}."
             msg += "Please check the code or upload your notebooks "
             msg += "and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
         elif not os.path.exists(f"{directory}/grading-logs.txt"):
-            log.write_logs(code, "Download: Results Not Ready",
-                           f"{code}",
+            log.write_logs(download_code, "Download: Results Not Ready",
+                           f"{download_code}",
                            "debug",
                            f'{os.environ.get("ENVIRONMENT")}-debug')
             msg = "The results of your download are not ready yet. "
             msg += "Please check back."
-            self.render("index.html",  download_message=msg, dcode=code)
+            self.render("index.html",  download_message=msg, dcode=download_code)
         else:
             if not os.path.isfile(f"{directory}/final_grades.csv"):
-                log.write_logs(code, "Download: final_grades.csv does not exist",
+                log.write_logs(download_code, "Download: final_grades.csv does not exist",
                                "Problem grading notebooks see stack trace",
                                "debug",
                                f'{os.environ.get("ENVIRONMENT")}-debug')
@@ -152,7 +126,7 @@ class Download(tornado.web.RequestHandler):
                     f.write(m)
                     f.close()
 
-            log.write_logs(code, "Download Success: Creating results.zip",
+            log.write_logs(download_code, "Download Success: Creating results.zip",
                            "",
                            "debug",
                            f'{os.environ.get("ENVIRONMENT")}-debug')
@@ -163,7 +137,8 @@ class Download(tornado.web.RequestHandler):
 
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
-            self.set_header('Content-Disposition', f"attachment; filename=results-{code}.zip")
+            m = f"attachment; filename=results-{download_code}.zip"
+            self.set_header('Content-Disposition', m)
             with open(f"{directory}/results.zip", 'rb') as f:
                 try:
                     while True:
@@ -176,7 +151,7 @@ class Download(tornado.web.RequestHandler):
                     self.write(exc)
 
 
-class Upload(tornado.web.RequestHandler):
+class Upload(BaseHandler):
     """This is the upload handler for users to upload autograder.zip and notebooks
 
     Args:
@@ -185,7 +160,7 @@ class Upload(tornado.web.RequestHandler):
     async def post(self):
         """this handles the post request and asynchronously launches the grader
         """
-        g = GradeNotebooks()
+        g = grade_notebooks.GradeNotebooks()
         files = self.request.files
         results_path = str(uuid.uuid4())
         autograder = self.request.files['autograder'][0] if "autograder" in files else None
@@ -239,13 +214,16 @@ class Upload(tornado.web.RequestHandler):
 
 settings = {
     "cookie_secret": str(uuid.uuid4()),
-    "xsrf_cookies": True
+    "xsrf_cookies": True,
+    "login_url": "/login"
 }
 
 application = tornado.web.Application([
-        (r"/", Userform),
+        (r"/", MainHandler),
+        (r"/login", LoginHandler),
         (r"/upload", Upload),
         (r"/download", Download),
+        (r"/oauth_callback", GitHubOAuthHandler),
         ], **settings, debug=True)
 
 
@@ -254,14 +232,11 @@ def main():
     """
     try:
         application.listen(80)
-        msg = f'{os.environ.get("ENVIRONMENT")}-debug'
-        log.write_logs("Server Start", "Starting Server", "", "info", msg)
+        log.write_logs("Server Start", "Starting Server", "", "info", log_coll)
         tornado.ioloop.IOLoop.instance().start()
     except Exception as e:
-        log.write_logs("Server Start Error", "Server Starting error",
-                       str(e),
-                       "error",
-                       f'{os.environ.get("ENVIRONMENT")}-debug')
+        m = "Server Starting error"
+        log.write_logs("Server Start Error", m, str(e), "error", log_coll)
 
 
 if __name__ == "__main__":
