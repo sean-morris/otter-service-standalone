@@ -10,8 +10,18 @@ log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
 
 class GradeNotebooks():
     """The class contains the async grade method for executing
-        otter grader
+        otter grader as well as a function for logging the number of 
+        notebooks to be graded
     """
+
+    def count_ipynb_files(self, directory, extension):
+        """this count the files for logging purposes"""
+        count = 0
+        for filename in os.listdir(directory):
+            if filename.endswith(extension):
+                count += 1
+        return count
+
     async def grade(self, p, notebooks_path, results_id):
         """Calls otter grade asynchronously and writes the various log files
         and results of grading generating by otter-grader
@@ -30,7 +40,10 @@ class GradeNotebooks():
         try:
             notebook_folder = uh.handle_upload(notebooks_path, results_id)
             notebook_count = self.count_ipynb_files(notebook_folder, ".ipynb")
-            log.write_logs(results_id, f"{notebook_count}", "", "info", log_count)
+            log.write_logs(results_id, f"{notebook_count}",
+                           "",
+                           "info",
+                           f'{os.environ.get("ENVIRONMENT")}-count')
             log.write_logs(results_id, "Step 5: Notebook Folder configured for grader",
                            f"Notebook Folder: {notebook_folder}",
                            "debug",
