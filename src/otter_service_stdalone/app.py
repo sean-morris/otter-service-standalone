@@ -11,7 +11,9 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 
 __UPLOADS__ = "/tmp/uploads"
-log_coll = f'{os.environ.get("ENVIRONMENT")}-debug'
+log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
+log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
+
 state = str(uuid.uuid4())  # used to protect against cross-site request forgery attacks.
 
 
@@ -25,7 +27,27 @@ class LoginHandler(tornado.web.RequestHandler):
         await u_auth.handle_authorization(self, state)
 
 
-class GitHubOAuthHandler(tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
+    """This is the super class for the handlers. get_current_user is called by
+    any handler that decorated with @tornado.web.authenticated
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def get_current_user(self):
+        return self.get_secure_cookie("user")
+
+    def write_error(self, status_code, **kwargs):
+        log.write_logs("Http Error", f"{status_code} Error", "", "info", log_error)
+        if status_code == 403:
+            self.set_status(403)
+            self.render("static_templates/403.html")
+        else:
+            self.set_status(500)
+            self.render("static_templates/500.html")
+
+
+class GitHubOAuthHandler(BaseHandler):
     """Handles GitHubOAuth
 
     Args:
@@ -42,24 +64,9 @@ class GitHubOAuthHandler(tornado.web.RequestHandler):
                 self.set_secure_cookie("user", user, expires_days=7)
                 self.redirect("/")
             else:
-                m = "You are not part of the group that can access this application. "
-                m += "Please email: sean.smorris@berkeley.edu"
-                self.write(m)
+                raise tornado.web.HTTPError(403)
         else:
-            m = "We were unable to establish access to this applicaiton. "
-            m += "Please email: sean.smorris@berkeley.edu"
-            self.write(m)
-
-
-class BaseHandler(tornado.web.RequestHandler):
-    """This is the super class for the handlers. get_current_user is called by
-    any handler that decorated with @tornado.web.authenticated
-
-    Args:
-        tornado (tornado.web.RequestHandler): The request handler
-    """
-    def get_current_user(self):
-        return self.get_secure_cookie("user")
+            raise tornado.web.HTTPError(500)
 
 
 class MainHandler(BaseHandler):
@@ -81,6 +88,7 @@ class Download(BaseHandler):
     """
     @tornado.web.authenticated
     def get(self):
+        # this just redirects to login and displays main page
         self.render("index.html", message=None)
 
     @tornado.web.authenticated
@@ -91,45 +99,35 @@ class Download(BaseHandler):
         download_code = self.get_argument('download')
         directory = f"{__UPLOADS__}/{download_code}"
         if download_code == "":
-            log.write_logs(download_code, "Download: Code Not Given!",
-                           f"{download_code}",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Download: Code Not Given!"
+            log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "Please enter the download code to see your result."
             self.render("index.html",  download_message=msg)
         elif not os.path.exists(f"{directory}"):
-            log.write_logs(download_code, "Download: Directory for Code Not existing",
-                           f"{download_code}",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Download: Directory for Code Not existing"
+            log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "The download code appears to not be correct or expired "
             msg += f"- results are deleted regularly: {download_code}."
             msg += "Please check the code or upload your notebooks "
             msg += "and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
         elif not os.path.exists(f"{directory}/grading-logs.txt"):
-            log.write_logs(download_code, "Download: Results Not Ready",
-                           f"{download_code}",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Download: Results Not Ready"
+            log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "The results of your download are not ready yet. "
             msg += "Please check back."
             self.render("index.html",  download_message=msg, dcode=download_code)
         else:
             if not os.path.isfile(f"{directory}/final_grades.csv"):
-                log.write_logs(download_code, "Download: final_grades.csv does not exist",
-                               "Problem grading notebooks see stack trace",
-                               "debug",
-                               f'{os.environ.get("ENVIRONMENT")}-debug')
+                m = "Download: final_grades.csv does not exist"
+                t = "Problem grading notebooks see stack trace"
+                log.write_logs(download_code, m, t, "debug", log_debug)
                 with open(f"{directory}/final_grades.csv", "a") as f:
                     m = "There was a problem grading your notebooks. Please see grading-logs.txt"
                     f.write(m)
                     f.close()
-
-            log.write_logs(download_code, "Download Success: Creating results.zip",
-                           "",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Download Success: Creating results.zip"
+            log.write_logs(download_code, m, "", "debug", log_debug)
             with ZipFile(f"{directory}/results.zip", 'w') as zipF:
                 for file in ["final_grades.csv", "grading-logs.txt"]:
                     if os.path.isfile(f"{directory}/{file}"):
@@ -157,6 +155,12 @@ class Upload(BaseHandler):
     Args:
         tornado (tornado.web.RequestHandler): The upload request handler
     """
+    @tornado.web.authenticated
+    def get(self):
+        # this just redirects to login and displays main page
+        self.render("index.html", message=None)
+
+    @tornado.web.authenticated
     async def post(self):
         """this handles the post request and asynchronously launches the grader
         """
@@ -165,10 +169,7 @@ class Upload(BaseHandler):
         results_path = str(uuid.uuid4())
         autograder = self.request.files['autograder'][0] if "autograder" in files else None
         notebooks = self.request.files['notebooks'][0] if "notebooks" in files else None
-        log.write_logs(results_path, "Step 1: Upload accepted",
-                       "",
-                       "debug",
-                       f'{os.environ.get("ENVIRONMENT")}-debug')
+        log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
         if autograder is not None and notebooks is not None:
             notebooks_fname = notebooks['filename']
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
@@ -180,34 +181,25 @@ class Upload(BaseHandler):
                 os.mkdir(__UPLOADS__)
             auto_p = f"{__UPLOADS__}/{autograder_name}"
             notebooks_path = f"{__UPLOADS__}/{notebooks_name}"
-            log.write_logs(results_path, "Step 2a: Uploaded File Names Determined",
-                           f"notebooks path: {notebooks_path}",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Step 2a: Uploaded File Names Determined"
+            log.write_logs(results_path, m, f"notebooks path: {notebooks_path}", "debug", log_debug)
             fh = open(auto_p, 'wb')
             fh.write(autograder['body'])
 
             fh = open(notebooks_path, 'wb')
             fh.write(notebooks['body'])
-            log.write_logs(results_path, "Step 3: Uploaded Files Written to Disk",
-                           f"Results Code: {results_path}",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Step 3: Uploaded Files Written to Disk"
+            log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
             m = "Please save this code. You can retrieve your files by submitting this code "
             m += f"in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
             try:
                 await g.grade(auto_p, notebooks_path, results_path)
             except Exception as e:
-                log.write_logs(results_path, "Grading Problem",
-                               str(e),
-                               "error",
-                               f'{os.environ.get("ENVIRONMENT")}-logs')
+                log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
-            log.write_logs(results_path, "Step 2b: Uploaded Files not given",
-                           "",
-                           "debug",
-                           f'{os.environ.get("ENVIRONMENT")}-debug')
+            m = "Step 2b: Uploaded Files not given"
+            log.write_logs(results_path, m, "", "debug", log_debug)
             m = "It looks like you did not set the notebooks or autograder.zip or both!"
             self.render("index.html", message=m)
 
@@ -224,7 +216,7 @@ application = tornado.web.Application([
         (r"/upload", Upload),
         (r"/download", Download),
         (r"/oauth_callback", GitHubOAuthHandler),
-        ], **settings, debug=True)
+        ], **settings, debug=False)
 
 
 def main():
@@ -232,11 +224,11 @@ def main():
     """
     try:
         application.listen(80)
-        log.write_logs("Server Start", "Starting Server", "", "info", log_coll)
+        log.write_logs("Server Start", "Starting Server", "", "info", log_debug)
         tornado.ioloop.IOLoop.instance().start()
     except Exception as e:
         m = "Server Starting error"
-        log.write_logs("Server Start Error", m, str(e), "error", log_coll)
+        log.write_logs("Server Start Error", m, str(e), "error", log_debug)
 
 
 if __name__ == "__main__":
