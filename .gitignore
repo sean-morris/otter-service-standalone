@@ -8,3 +8,5 @@ docker-compose.yml
 deployment/cloud/deploy-remove.sh
 *-debug.log
 file
+firestore-debug.log
+ui-debug.log

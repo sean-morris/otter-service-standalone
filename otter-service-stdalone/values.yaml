@@ -108,6 +108,7 @@ otter_env:
   parameters:
     verbose_logging: true
     gcp_project_id: data8x-scratch
+    auth_org: otter-service-stdalone
 
 service:
   name: otter-lb

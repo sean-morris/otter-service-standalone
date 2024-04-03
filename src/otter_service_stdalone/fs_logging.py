@@ -50,7 +50,7 @@ def write_logs(id, msg, trace, type, collection):
         try:
             db = firestore.client()
             # this redirects FireStore to local emulator when local testing!
-            if os.getenv("ENVIRONMENT") == "otter-stdalone-docker-local-test":
+            if "local" in os.getenv("ENVIRONMENT"):
                 channel = grpc.insecure_channel("host.docker.internal:8080")
                 transport = firestore_grpc_transport.FirestoreGrpcTransport(channel=channel)
                 db._firestore_api_internal = firestore_client.FirestoreClient(transport=transport)
