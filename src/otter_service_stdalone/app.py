@@ -17,6 +17,16 @@ log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
 state = str(uuid.uuid4())  # used to protect against cross-site request forgery attacks.
 
 
+class HealthHandler(tornado.web.RequestHandler):
+    """Handles Load Balancer Health Check
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def get(self):
+        self.set_status(200)
+
+
 class LoginHandler(tornado.web.RequestHandler):
     """Initiaties login auth by authorizing access to github auth api
 
@@ -216,6 +226,7 @@ application = tornado.web.Application([
         (r"/upload", Upload),
         (r"/download", Download),
         (r"/oauth_callback", GitHubOAuthHandler),
+        (r"/otterhealth", HealthHandler),
         ], **settings, debug=False)
 
 
