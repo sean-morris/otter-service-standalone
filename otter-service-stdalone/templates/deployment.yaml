@@ -57,10 +57,6 @@ spec:
           imagePullPolicy: {{ .Values.otter_srv_stdalone.pullPolicy }}
           ports:
             {{- toYaml .Values.otter_srv_stdalone.ports | nindent 12 }}
-          # lifecycle:
-          #   postStart:
-          #     exec:
-          #       command: ["/bin/sh", "-c", "echo hello"]
           resources:
             {{- toYaml .Values.otter_srv_stdalone.resources | nindent 12 }}
           volumeMounts:
@@ -69,7 +65,10 @@ spec:
             {{- toYaml .Values.otter_srv_stdalone.env | nindent 12 }}
           envFrom:
             {{- toYaml .Values.otter_srv_stdalone.envFrom | nindent 12 }}
-        
+          readinessProbe:
+            httpGet:
+              path:  {{ .Values.otter_srv_stdalone.healthCheckPath }}
+              port: {{ .Values.otter_srv_stdalone.healthCheckPort }}
       volumes:
         - name: opt-volume
           persistentVolumeClaim:
