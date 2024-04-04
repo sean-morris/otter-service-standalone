@@ -111,6 +111,7 @@ otter_env:
     verbose_logging: true
     gcp_project_id: data8x-scratch
     auth_org: otter-service-stdalone
+    support_email: sean.smorris@berkeley.edu
 
 service:
   name: otter-lb
