@@ -8,7 +8,7 @@ otter_srv_stdalone:
 otter_env:
   parameters:
     environment: otter-stdalone-prod
-    grader_dns: http://grader.datahub.berkeley.edu
+    grader_dns: https://grader.datahub.berkeley.edu
 certificate:
   dns: grader.datahub.berkeley.edu
 ingress:
