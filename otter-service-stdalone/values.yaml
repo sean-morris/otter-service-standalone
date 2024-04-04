@@ -34,6 +34,8 @@ otter_srv_stdalone:
   name: otter-srv-stdalone
   repository: gcr.io/data8x-scratch/otter-srv-stdalone
   pullPolicy: Always
+  healthCheckPath: /otterhealth
+  healthCheckPort: 80
   tag: "latest"
   resources:
     limits:

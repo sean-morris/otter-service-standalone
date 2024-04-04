@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/ingress.class: gce
     cert-manager.io/issuer: {{ .Values.issuer.acme_name }}
     acme.cert-manager.io/http01-edit-in-place: "true"
-    kubernetes.io/ingress.allow-http: "true"
+    networking.gke.io/v1beta1.FrontendConfig: ssl-redirect
 spec:
   tls:
     - secretName: {{ .Values.certificate.secret }}
