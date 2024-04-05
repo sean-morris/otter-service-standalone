@@ -15,6 +15,12 @@ RUN apt-get install -y python3 && \
     apt-get install -y curl && \
     apt-get install -y golang
 
+# set timezone
+RUN apt-get update && \
+    apt-get install -yq tzdata && \
+    ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
 # install golang to support sops(python-sops does nto work with GCP KMS)
 RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3

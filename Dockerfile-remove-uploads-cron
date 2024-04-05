@@ -1,8 +1,15 @@
 FROM ubuntu:20.04 AS base
 
+# set timezone
+RUN apt-get update && \
+    apt-get install -yq tzdata && \
+    ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
 # Install cron
 RUN apt-get update && apt-get -y install cron
 
+    
 # Set the working directory
 WORKDIR /app
 
