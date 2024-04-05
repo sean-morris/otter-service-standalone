@@ -1,3 +1,10 @@
+## 0.1.23
+
+#### Enhancements made
+
+- Set timezone on instances
+- updated cron job to delete and log all folders and files
+
 ## 0.1.22
 
 #### Enhancements made
