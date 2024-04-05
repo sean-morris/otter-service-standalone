@@ -14,7 +14,17 @@ __UPLOADS__ = "/tmp/uploads"
 log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
 log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
 
-state = str(uuid.uuid4())  # used to protect against cross-site request forgery attacks.
+authorization_states = {}  # used to protect against cross-site request forgery attacks.
+
+
+class HealthHandler(tornado.web.RequestHandler):
+    """Handles Load Balancer Health Check
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def get(self):
+        self.set_status(200)
 
 
 class LoginHandler(tornado.web.RequestHandler):
@@ -24,6 +34,8 @@ class LoginHandler(tornado.web.RequestHandler):
         tornado (tornado.web.RequestHandler): The request handler
     """
     async def get(self):
+        state = str(uuid.uuid4())
+        authorization_states[state] = True
         await u_auth.handle_authorization(self, state)
 
 
@@ -39,12 +51,13 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def write_error(self, status_code, **kwargs):
         log.write_logs("Http Error", f"{status_code} Error", "", "info", log_error)
+        self.clear_cookie("user")
         if status_code == 403:
             self.set_status(403)
-            self.render("static_templates/403.html")
+            self.render("static_templates/403.html", support=f'{os.environ.get("SUPPORT_EMAIL")}')
         else:
             self.set_status(500)
-            self.render("static_templates/500.html")
+            self.render("static_templates/500.html", support=f'{os.environ.get("SUPPORT_EMAIL")}')
 
 
 class GitHubOAuthHandler(BaseHandler):
@@ -56,17 +69,28 @@ class GitHubOAuthHandler(BaseHandler):
     async def get(self):
         code = self.get_argument('code', False)
         arg_state = self.get_argument('state', False)
-        access_token = await u_auth.get_acess_token(arg_state, state, code)
-        if access_token:
-            user = await u_auth.get_github_username(access_token)
-            is_org_member = await u_auth.handle_is_org_member(access_token, user)
-            if is_org_member:
-                self.set_secure_cookie("user", user, expires_days=7)
-                self.redirect("/")
-            else:
-                raise tornado.web.HTTPError(403)
-        else:
+        if arg_state not in authorization_states:
+            m = "UserAuth: GitHubOAuthHandler: Cross-Site Forgery possible - aborting"
+            log.write_logs("Auth Workflow", m, "", "info", log_error)
+            log.write_logs("Auth Workflow", m, "", "info", log_debug)
             raise tornado.web.HTTPError(500)
+
+        del authorization_states[arg_state]
+
+        access_token = await u_auth.get_acess_token(code)
+        if access_token is None:
+            raise tornado.web.HTTPError(403)
+
+        user = await u_auth.get_github_username(access_token)
+        if not user:
+            raise tornado.web.HTTPError(403)
+
+        is_org_member = await u_auth.handle_is_org_member(access_token, user)
+        if not is_org_member:
+            raise tornado.web.HTTPError(403)
+
+        self.set_secure_cookie("user", user, expires_days=7)
+        self.redirect("/")
 
 
 class MainHandler(BaseHandler):
@@ -216,6 +240,7 @@ application = tornado.web.Application([
         (r"/upload", Upload),
         (r"/download", Download),
         (r"/oauth_callback", GitHubOAuthHandler),
+        (r"/otterhealth", HealthHandler),
         ], **settings, debug=False)
 
 

@@ -4,6 +4,14 @@ metadata:
   name: {{ include "otter-service-stdalone.fullname" . }}
   labels:
     {{- include "otter-service-stdalone.labels" . | nindent 4 }}
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "80"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/otterhealth"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-check-interval-seconds: "15"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-response-timeout-seconds: "15"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "2"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-healthy-threshold: "1"
 spec:
   type: {{ .Values.service.type }}
   ports:
