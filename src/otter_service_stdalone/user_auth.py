@@ -6,7 +6,7 @@ import tornado
 import urllib.parse
 
 
-log_coll = f'{os.environ.get("ENVIRONMENT")}-debug'
+log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
 environment_name = os.environ.get("ENVIRONMENT").split("-")[-1]
 gh_key_path = os.path.join(os.path.dirname(__file__), f"secrets/gh_key.{environment_name}.yaml")
 github_id = access_sops_keys.get(None, "github_access_id", secrets_file=gh_key_path)
@@ -22,19 +22,15 @@ async def handle_authorization(form, state):
         - state (int): random uuid4 number generated to ensure communication between endpoints is
           not compromised
     """
-    log.write_logs("Auth Workflow", "UserAuth: Get: Authorizing", "", "info", log_coll)
+    log.write_logs("Auth Workflow", "UserAuth: Get: Authorizing", "", "info", log_debug)
     q_params = f"client_id={github_id}&state={state}&scope=read:org"
     form.redirect(f'https://github.com/login/oauth/authorize?{q_params}')
 
 
-async def get_acess_token(arg_state, state, code):
+async def get_acess_token(code):
     """requests and returns the access token or None
 
     Parameters:
-        - arg_state (int): the state argument being passed on the url string; this will be compared
-          to the state value generated in this file to ensure they are the same!
-        - state (int): random uuid4 number generated to ensure communication between endpoints is
-          not compromised
         - code (str): the code that is returned from the authorization request
 
     Returns:
@@ -48,7 +44,7 @@ async def get_acess_token(arg_state, state, code):
         'redirect_uri': f"{os.environ.get('GRADER_DNS')}/oauth_callback"
     }
     m = "UserAuth: GitHubOAuthHandler: Getting Access Token"
-    log.write_logs("Auth Workflow", m, "", "info", log_coll)
+    log.write_logs("Auth Workflow", m, "", "info", log_debug)
     response = await http_client.fetch(
         'https://github.com/login/oauth/access_token',
         method='POST',
@@ -56,14 +52,15 @@ async def get_acess_token(arg_state, state, code):
         body=urllib.parse.urlencode(params)
     )
     resp = json.loads(response.body.decode())
-    access_token = resp['access_token']
-    if arg_state != state:
-        access_token = None
-        m = "UserAuth: GitHubOAuthHandler: Cross-Site Forgery possible - aborting"
-        log.write_logs("Auth Workflow", m, "", "info", log_coll)
+    access_token = None
+    if "access_token" in resp:
+        access_token = resp["access_token"]
+    if access_token is None:
+        m = "UserAuth: GitHubOAuthHandler: Access Token NOT Granted - probably not member"
+        log.write_logs("Auth Workflow", m, "", "info", log_debug)
     else:
         m = "UserAuth: GitHubOAuthHandler: Access Token Granted"
-        log.write_logs("Auth Workflow", m, "", "info", log_coll)
+        log.write_logs("Auth Workflow", m, "", "info", log_debug)
     return access_token
 
 
@@ -78,18 +75,18 @@ async def handle_is_org_member(access_token, user):
     Returns:
         - boolean: True user is in the GH org, False otherwise
     """
-    log.write_logs("Auth Workflow", "UserAuth: Get: Check Membership", "", "info", log_coll)
-    if user:
-        org_name = os.environ.get("AUTH_ORG")
-        url = f'https://api.github.com/orgs/{org_name}/members/{user}'
-        headers = {
-            'Authorization': f'token {access_token}',
-            'Accept': 'application/vnd.github.v3+json',
-        }
-        response = requests.get(url, headers=headers)
-        return response.status_code == 204
-    else:
-        return False
+    log.write_logs("Auth Workflow", "UserAuth: Get: Check Membership", "", "info", log_debug)
+    org_name = os.environ.get("AUTH_ORG")
+    url = f'https://api.github.com/orgs/{org_name}/members/{user}'
+    headers = {
+        'Authorization': f'token {access_token}',
+        'Accept': 'application/vnd.github.v3+json',
+    }
+    response = requests.get(url, headers=headers)
+    is_member = response.status_code == 204
+    m = f"UserAuth: Get: Check Membership: {is_member}"
+    log.write_logs("Auth Workflow", m, "", "info", log_debug)
+    return is_member
 
 
 async def get_github_username(access_token):
@@ -103,18 +100,14 @@ async def get_github_username(access_token):
     - str: The username of the authenticated user, or None if not found.
     """
     url = 'https://api.github.com/user'
-    headers = {
-        'Authorization': f'token {access_token}',
-        'Accept': 'application/vnd.github.v3+json',
-    }
-
+    headers = {'Authorization': f'token {access_token}'}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         m = "UserAuth: Get: UserName - Success"
-        log.write_logs("Auth Workflow", m, "", "info", log_coll)
+        log.write_logs("Auth Workflow", m, "", "info", log_debug)
         user_info = response.json()
         return user_info.get('login')
     else:
         m = f"UserAuth: Get: UserName - Fail:{response.status_code}"
-        log.write_logs("Auth Workflow", m, "", "info", log_coll)
+        log.write_logs("Auth Workflow", m, "", "info", log_debug)
         return None
