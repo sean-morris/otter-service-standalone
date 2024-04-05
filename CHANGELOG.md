@@ -1,3 +1,10 @@
+## 0.1.22
+
+#### Enhancements made
+
+- Cleaned up Auth
+
+
 ## 0.1.21
 
 #### Enhancements made
