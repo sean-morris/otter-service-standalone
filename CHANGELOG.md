@@ -1,3 +1,10 @@
+## 0.1.24
+
+#### Enhancements made
+
+- Removed log on first step of authorization -- it was happening for every robot, etc
+- http errors get own log
+
 ## 0.1.23
 
 #### Enhancements made
