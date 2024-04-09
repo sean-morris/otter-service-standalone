@@ -13,6 +13,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 __UPLOADS__ = "/tmp/uploads"
 log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
 log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
+log_http = f'{os.environ.get("ENVIRONMENT")}-http-error'
 
 authorization_states = {}  # used to protect against cross-site request forgery attacks.
 
@@ -50,7 +51,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.get_secure_cookie("user")
 
     def write_error(self, status_code, **kwargs):
-        log.write_logs("Http Error", f"{status_code} Error", "", "info", log_error)
+        log.write_logs("Http Error", f"{status_code} Error", "", "info", log_http)
         self.clear_cookie("user")
         if status_code == 403:
             self.set_status(403)

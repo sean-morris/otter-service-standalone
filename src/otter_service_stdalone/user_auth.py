@@ -22,7 +22,6 @@ async def handle_authorization(form, state):
         - state (int): random uuid4 number generated to ensure communication between endpoints is
           not compromised
     """
-    log.write_logs("Auth Workflow", "UserAuth: Get: Authorizing", "", "info", log_debug)
     q_params = f"client_id={github_id}&state={state}&scope=read:org"
     form.redirect(f'https://github.com/login/oauth/authorize?{q_params}')
 
