@@ -54,6 +54,7 @@ class GradeNotebooks():
                 '-p', notebook_folder,
                 "--ext", "ipynb",
                 "--containers", "10",
+                "--timeout", "1080",
                 "-o", notebook_folder,
                 "-v"
             ]
