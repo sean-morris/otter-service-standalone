@@ -1,3 +1,10 @@
+## 0.1.25
+
+#### Enhancements made
+
+- Added 18 minuted timeout -- the log downloaded to user shows the offending notebook
+
+
 ## 0.1.24
 
 #### Enhancements made
