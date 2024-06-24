@@ -1,0 +1,12 @@
+async_timeout
+datascience
+firebase-admin
+google-cloud-firestore
+matplotlib
+numpy
+otter-grader
+pandas
+plotly
+requests
+scipy
+tornado
