@@ -26,7 +26,7 @@ RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
     go install go.mozilla.org/sops/v3/cmd/sops@v3.7.3
 
 RUN mkdir -p /etc/otter-service-stdalone
-ADD ./requirements.txt /etc/otter-service-stdalone/requirements.txt
+ADD ./requirements/prod.txt /etc/otter-service-stdalone/requirements.txt
 RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
 
 # install docker cli
@@ -53,6 +53,9 @@ WORKDIR /opt
 EXPOSE 80
 
 FROM base as image-local
+COPY ./otter-grader /opt/otter-grader
+RUN python3 -m pip install /opt/otter-grader
+
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
 RUN python3 -m pip install /opt/otter-service-stdalone/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz
 ENTRYPOINT ["otter_service_stdalone"]

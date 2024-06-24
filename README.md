@@ -14,3 +14,7 @@ the version number in src/otter_service_stdalone/__init__.py before a new build.
 A git tag with the version is pushed to git whenever the version is bumped and
 deployed in production. `git tag` will show you the format of the tag(e.g. 0.0.30)
 
+## Local Dev:
+Execute: sh deployment/local/build.sh
+- FireStore: http://127.0.0.1:4007/firestore/
+- App: http://127.0.0.1/

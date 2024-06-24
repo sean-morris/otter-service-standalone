@@ -1,0 +1,7 @@
+-r prod.txt
+pytest
+pytest-env
+pytest-tornasync
+pytest_async
+build
+twine
