@@ -4,11 +4,11 @@ metadata:
   name: {{ .Values.ingress.name }}
   annotations:
     kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.static_ip_name }}
-    kubernetes.io/ingress.class: gce
     cert-manager.io/issuer: {{ .Values.issuer.acme_name }}
     acme.cert-manager.io/http01-edit-in-place: "true"
     networking.gke.io/v1beta1.FrontendConfig: ssl-redirect
 spec:
+  ingressClassName: gce
   tls:
     - secretName: {{ .Values.certificate.secret }}
       hosts:
