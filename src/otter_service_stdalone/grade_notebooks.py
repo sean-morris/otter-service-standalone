@@ -50,8 +50,9 @@ class GradeNotebooks():
                            log_debug)
             command = [
                 'otter', 'grade',
+                '-n', 'grader',
                 '-a', p,
-                '-p', notebook_folder,
+                notebook_folder,
                 "--ext", "ipynb",
                 "--containers", "10",
                 "--timeout", "1080",
