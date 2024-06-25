@@ -139,6 +139,7 @@ issuer:
   acme_server: https://acme-v02.api.letsencrypt.org/directory
   acme_email: datahub-support@berkeley.edu
   acme_name: letsencrypt
+  acme_kind: letsencrypt-http
 
 certificate:
   name: le-crt
