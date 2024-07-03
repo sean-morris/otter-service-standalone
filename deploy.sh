@@ -4,6 +4,7 @@ version=`sed -e 's/^"//' -e 's/"$//' <<<"$version"`
 branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
+cp -r ../otter-grader ./otter-grader
 if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     python3 -m build
     python3 -m pip install dist/otter_service_stdalone-${version}.tar.gz --force
@@ -29,4 +30,4 @@ else
     # Use this when namespace completely deleted
     helm install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --create-namespace --namespace otter-stdalone-$branch_name --skip-crds 
 fi
-
+rm -rf ./otter-grader

@@ -1,3 +1,10 @@
+## 0.1.27
+
+#### Enhancements made
+
+- Upgraded to otter-grader 5.6.0(unreleased)
+
+
 ## 0.1.25
 
 #### Enhancements made
