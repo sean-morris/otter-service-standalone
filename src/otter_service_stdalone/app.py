@@ -198,7 +198,11 @@ class Upload(BaseHandler):
         if autograder is not None and notebooks is not None:
             notebooks_fname = notebooks['filename']
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
-            notebooks_name = results_path + notebooks_extn
+            if notebooks_extn == ".zip":
+                notebooks_name = results_path + notebooks_extn
+            else:
+                notebooks_name = f"{results_path}/{notebooks_fname}"
+                os.mkdir(f"{__UPLOADS__}/{results_path}")
             autograder_fname = autograder['filename']
             autograder_extn = os.path.splitext(autograder_fname)[1]
             autograder_name = str(uuid.uuid4()) + autograder_extn
