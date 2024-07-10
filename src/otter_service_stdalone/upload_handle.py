@@ -13,10 +13,7 @@ def handle_one_notebook(path):
     Returns:
         str: the notebook path
     """
-    notebook_name = path.split(".")[0]
-    os.mkdir(notebook_name)
-    shutil.move(path, notebook_name)
-    return notebook_name
+    return os.path.dirname(path)
 
 
 def one_notebook(path):
