@@ -4,9 +4,10 @@ version=`sed -e 's/^"//' -e 's/"$//' <<<"$version"`
 branch_name=$(git symbolic-ref -q HEAD)
 branch_name=${branch_name##refs/heads/}
 branch_name=${branch_name:-HEAD}
-cp -r ../otter-grader ./otter-grader
+
 if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     #Temp while building otter-grader locally
+    cp -r ../otter-grader ./otter-grader
     cd ./otter-grader
     python3 -m build .
 
@@ -27,6 +28,7 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     docker build -t gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version -t gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron -f Dockerfile-remove-uploads-cron .
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron
+    rm -rf ./otter-grader
 fi
 ns=$(kubectl get namespaces | grep otter-stdalone-${branch_name})
 if [[ $ns == *"otter-stdalone-${branch_name}"* ]]; then
@@ -35,4 +37,4 @@ else
     # Use this when namespace completely deleted
     helm install otter-srv --set otter_srv_stdalone.tag=$version --set otter_srv_remove_uploads_cron.tag=$version otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.$branch_name.yaml --create-namespace --namespace otter-stdalone-$branch_name --skip-crds 
 fi
-#rm -rf ./otter-grader
+
