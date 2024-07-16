@@ -157,6 +157,10 @@ class Download(BaseHandler):
                 for file in ["final_grades.csv", "grading-logs.txt"]:
                     if os.path.isfile(f"{directory}/{file}"):
                         zipF.write(f"{directory}/{file}", file, compress_type=ZIP_DEFLATED)
+                for filename in os.listdir(f"{directory}/grading-summaries"):
+                    file_path = os.path.join(f"{directory}/grading-summaries", filename)
+                    if os.path.isfile(file_path):
+                        zipF.write(f"{directory}/grading-summaries/{filename}", f"grading-summaries/{filename}", compress_type=ZIP_DEFLATED)
 
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
