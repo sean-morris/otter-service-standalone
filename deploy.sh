@@ -8,10 +8,7 @@ branch_name=${branch_name:-HEAD}
 if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     #Temp while building otter-grader locally
     cp -r ../otter-grader ./otter-grader
-    cd ./otter-grader
-    python3 -m build .
-
-    cd ..    
+    
     python3 -m build
     python3 -m pip install dist/otter_service_stdalone-${version}.tar.gz --force
     python3 -m twine upload dist/*$version*

@@ -50,8 +50,8 @@ RUN apt install -y python3.8-venv
 WORKDIR /opt
 EXPOSE 80
 
-ADD ./otter-grader/dist/otter_grader-5.5.0.tar.gz /opt/otter-grader/otter_grader-5.5.0.tar.gz
-RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install /opt/otter-grader/otter_grader-5.5.0.tar.gz --force
+COPY ./otter-grader/ /opt/otter-grader/
+RUN python3 -m pip install /opt/otter-grader/
 
 FROM base as image-local
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
