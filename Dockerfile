@@ -51,7 +51,7 @@ WORKDIR /opt
 EXPOSE 80
 
 COPY ./otter-grader/ /opt/otter-grader/
-RUN python3 -m pip install /opt/otter-grader/
+RUN python3 -m pip install  --no-cache-dir /opt/otter-grader/ --force
 
 FROM base as image-local
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
