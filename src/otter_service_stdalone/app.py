@@ -4,10 +4,12 @@ import tornado.web
 import tornado.auth
 import os
 import uuid
+import tornado.websocket
 from otter_service_stdalone import fs_logging as log
 from otter_service_stdalone import user_auth as u_auth
 from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
+from otter.grade import result_queue as q
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -16,6 +18,23 @@ log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
 log_http = f'{os.environ.get("ENVIRONMENT")}-http-error'
 
 authorization_states = {}  # used to protect against cross-site request forgery attacks.
+
+
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    clients = set()
+
+    def open(self):
+        print("WebSocket opened")
+        WebSocketHandler.clients.add(self)
+
+    def on_close(self):
+        print("WebSocket closed")
+        WebSocketHandler.clients.remove(self)
+
+    @classmethod
+    def send_updates(cls, message):
+        for client in cls.clients:
+            client.write_message(message)
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -183,7 +202,7 @@ class Upload(BaseHandler):
 
     Args:
         tornado (tornado.web.RequestHandler): The upload request handler
-    """
+    """        
     @tornado.web.authenticated
     def get(self):
         # this just redirects to login and displays main page
@@ -237,6 +256,13 @@ class Upload(BaseHandler):
             self.render("index.html", message=m)
 
 
+def check_queue():
+    while not q.empty():
+        results = q.get()
+        print(f"Received results: {results}")
+        WebSocketHandler.send_updates(results)
+
+
 settings = {
     "cookie_secret": str(uuid.uuid4()),
     "xsrf_cookies": True,
@@ -248,6 +274,7 @@ application = tornado.web.Application([
         (r"/login", LoginHandler),
         (r"/upload", Upload),
         (r"/download", Download),
+        (r"/update", WebSocketHandler),
         (r"/oauth_callback", GitHubOAuthHandler),
         (r"/otterhealth", HealthHandler),
         ], **settings, debug=False)
@@ -259,6 +286,11 @@ def main():
     try:
         application.listen(80)
         log.write_logs("Server Start", "Starting Server", "", "info", log_debug)
+
+        # Set up a PeriodicCallback to check the queue every second
+        periodic_callback = tornado.ioloop.PeriodicCallback(check_queue, 1000)
+        periodic_callback.start()
+
         tornado.ioloop.IOLoop.instance().start()
     except Exception as e:
         m = "Server Starting error"

@@ -4,6 +4,29 @@
 <title>Upload Form</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+<script>
+  var loc = window.location;
+  var wsStart = loc.protocol === "https:" ? "wss://" : "ws://";
+  var wsUrl = wsStart + loc.host + "/update";
+
+  var ws = new WebSocket(wsUrl);
+
+  ws.onopen = function() {
+      console.log("WebSocket is open now.");
+  };
+
+  ws.onmessage = function(event) {
+      var messagesDiv = document.getElementById("messages");
+      var newMessage = document.createElement("div");
+      newMessage.textContent = event.data;
+      messagesDiv.appendChild(newMessage);
+      console.log("WebSocket:" + event.data);
+  };
+
+  ws.onclose = function() {
+      console.log("WebSocket is closed now.");
+  };
+</script>
 </head>
 <body>
     <section class="container">
@@ -83,6 +106,7 @@
                             <small><em>{{ download_message }}</em></small>
                             {% end %}
                         </form>
+                        <div id="messages">Progress</div>
                     </div>
                     </div>
             </div>
