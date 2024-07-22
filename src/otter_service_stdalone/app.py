@@ -9,7 +9,7 @@ from otter_service_stdalone import fs_logging as log
 from otter_service_stdalone import user_auth as u_auth
 from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
-from otter.grade import result_queue as q
+import queue
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -18,23 +18,40 @@ log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
 log_http = f'{os.environ.get("ENVIRONMENT")}-http-error'
 
 authorization_states = {}  # used to protect against cross-site request forgery attacks.
+session_queues = {}
+session_callbacks = {}
 
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    clients = set()
-
     def open(self):
-        print("WebSocket opened")
-        WebSocketHandler.clients.add(self)
+        user_id = self.get_secure_cookie("user").decode('utf-8')
+        self.user_id = user_id
+        self.user_queue = session_queues.get(user_id)
+        if not self.user_queue:
+            self.close()
+            return
+
+        # Start a periodic callback for this session
+        if user_id not in session_callbacks:
+            callback = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
+            session_callbacks[user_id] = callback
+            callback.start()
+
+    def on_message(self, message):
+        pass  # No action needed on incoming message
 
     def on_close(self):
-        print("WebSocket closed")
-        WebSocketHandler.clients.remove(self)
+        if hasattr(self, 'callback'):
+            self.callback.stop()
 
-    @classmethod
-    def send_updates(cls, message):
-        for client in cls.clients:
-            client.write_message(message)
+    def send_results(self, user_id):
+        user_queue = session_queues.get(user_id)
+        if not user_queue.empty():
+            messages = []
+            while not user_queue.empty():
+                messages.append(user_queue.get())
+            self.write_message({"messages": messages})
+
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -212,6 +229,11 @@ class Upload(BaseHandler):
     async def post(self):
         """this handles the post request and asynchronously launches the grader
         """
+        user = self.get_current_user()
+        user_id = user.decode('utf-8')
+        if user_id not in session_queues:
+            session_queues[user_id] = queue.Queue()
+
         g = grade_notebooks.GradeNotebooks()
         files = self.request.files
         results_path = str(uuid.uuid4())
@@ -246,7 +268,7 @@ class Upload(BaseHandler):
             m += f"in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
             try:
-                await g.grade(auto_p, notebooks_path, results_path)
+                await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id])
             except Exception as e:
                 log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
@@ -254,13 +276,6 @@ class Upload(BaseHandler):
             log.write_logs(results_path, m, "", "debug", log_debug)
             m = "It looks like you did not set the notebooks or autograder.zip or both!"
             self.render("index.html", message=m)
-
-
-def check_queue():
-    while not q.empty():
-        results = q.get()
-        print(f"Received results: {results}")
-        WebSocketHandler.send_updates(results)
 
 
 settings = {
@@ -286,10 +301,6 @@ def main():
     try:
         application.listen(80)
         log.write_logs("Server Start", "Starting Server", "", "info", log_debug)
-
-        # Set up a PeriodicCallback to check the queue every second
-        periodic_callback = tornado.ioloop.PeriodicCallback(check_queue, 1000)
-        periodic_callback.start()
 
         tornado.ioloop.IOLoop.instance().start()
     except Exception as e:

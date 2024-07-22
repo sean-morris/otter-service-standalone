@@ -4,6 +4,17 @@
 <title>Upload Form</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+<style>
+  /* Styles to make the div scrollable after a certain height */
+  #messages {
+      max-height: 200px; /* Set the maximum height */
+      overflow-y: auto; /* Enable vertical scrolling */
+      border: 1px solid #ccc; /* Optional: Add a border for visual clarity */
+      padding: 10px; /* Optional: Add padding for better readability */
+      width: auto; /* Set the width of the div */
+      display: none; /* Initially hide the div */
+  }
+</style>
 <script>
   var loc = window.location;
   var wsStart = loc.protocol === "https:" ? "wss://" : "ws://";
@@ -18,9 +29,16 @@
   ws.onmessage = function(event) {
       var messagesDiv = document.getElementById("messages");
       var newMessage = document.createElement("div");
-      newMessage.textContent = event.data;
+      json_msgs = JSON.parse(event.data);
+      json_msgs["messages"].forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        newMessage.appendChild(li);
+      });
       messagesDiv.appendChild(newMessage);
-      console.log("WebSocket:" + event.data);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      console.log("WebSocket:" + json_msgs["messages"]);
+
   };
 
   ws.onclose = function() {

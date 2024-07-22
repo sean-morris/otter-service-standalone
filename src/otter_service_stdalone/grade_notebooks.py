@@ -22,7 +22,7 @@ class GradeNotebooks():
                 count += 1
         return count
 
-    async def grade(self, p, notebooks_path, results_id):
+    async def grade(self, p, notebooks_path, results_id, user_queue):
         """Calls otter grade asynchronously and writes the various log files
         and results of grading generating by otter-grader
 
@@ -48,6 +48,7 @@ class GradeNotebooks():
                            f"Notebook Folder: {notebook_folder}",
                            "debug",
                            log_debug)
+            user_queue.put(f"notebook count: {notebook_count}")
             # command = [
             #     'otter', 'grade',
             #     '-n', 'grader',
@@ -67,6 +68,7 @@ class GradeNotebooks():
                 timeout=15,
                 ext="ipynb",
                 output_dir=notebook_folder,
+                result_queue=user_queue
             )
             # log.write_logs(results_id, f"Step 6: Grading Start: {notebook_folder}",
             #                " ".join(command),
