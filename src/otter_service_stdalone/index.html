@@ -7,43 +7,140 @@
 <style>
   /* Styles to make the div scrollable after a certain height */
   #messages {
-      max-height: 200px; /* Set the maximum height */
+      max-height: 400px; /* Set the maximum height */
       overflow-y: auto; /* Enable vertical scrolling */
-      border: 1px solid #ccc; /* Optional: Add a border for visual clarity */
       padding: 10px; /* Optional: Add padding for better readability */
       width: auto; /* Set the width of the div */
-      display: none; /* Initially hide the div */
   }
+  /* Styles for the collapsible div */
+  .collapsible {
+      border: 1px solid #ccc; /* Optional: Add a border for visual clarity */
+      width: auto; /* Set the width of the div */
+      margin-bottom: 10px; /* Add some space below the collapsible section */
+  }
+
+  /* Styles for the header */
+  .header {
+      background-color: #f1f1f1; /* Optional: Add background color to the header */
+      padding: 10px; /* Add padding for better readability */
+      cursor: pointer; /* Change cursor to pointer when hovering over the header */
+  }
+
+  /* Styles for the content */
+  .content {
+      max-height: 300px; /* Set the maximum height */
+      overflow-y: auto; /* Enable vertical scrolling */
+      padding: 10px; /* Optional: Add padding for better readability */
+      display: none; /* Initially hide the content */
+  }
+
+
 </style>
 <script>
-  var loc = window.location;
-  var wsStart = loc.protocol === "https:" ? "wss://" : "ws://";
-  var wsUrl = wsStart + loc.host + "/update";
+  function connectWebSocket() {
+    var loc = window.location;
+    var wsStart = loc.protocol === "https:" ? "wss://" : "ws://";
+    var wsUrl = wsStart + loc.host + "/update";
 
-  var ws = new WebSocket(wsUrl);
+    var ws = new WebSocket(wsUrl);
+    submission_divs = {}
+    reconnectInterval = 3000;
+    ws.onopen = function() {
+        console.log("WebSocket is open now.");
+        reconnectInterval = 3000;
+    };
 
-  ws.onopen = function() {
-      console.log("WebSocket is open now.");
+    ws.onmessage = function(event) {
+        var messagesDiv = document.getElementById("messages");
+        var noneMsgP = document.getElementById("none-msg");
+        noneMsgP.style.display = "none"
+        json_msgs = JSON.parse(event.data)["messages"];
+        console.log(json_msgs)
+        Object.entries(json_msgs).forEach(([submission_key, messages], index) => {
+          if (!(submission_key in submission_divs)){
+            var newMessage = document.createElement("div");
+            newMessage.id = submission_key
+            var newMessageHeader = document.createElement("div");
+            var newMessageContent = document.createElement("div");
+            newMessageContent.id = "msg-" + submission_key
+            newMessageHeader.id = "header-" + submission_key
+            var toggleSign =  document.createElement("span");
+            var submissionHeader =  document.createElement("span");
+            submissionHeader.innerHTML = " Submission Progress: Submission #" + (index+1)
+            submissionHeader.id = "sub-header-" + submission_key
+            newMessage.className = "collapsible"
+            newMessageHeader.className = "header"
+            toggleSign.innerHTML = '<i class="fas fa-minus-circle"></i>';
+          
+            newMessageHeader.appendChild(toggleSign)
+            newMessageHeader.appendChild(submissionHeader)
+            newMessageContent.className = "content"
+            newMessageContent.style.display = "block"
+            newMessage.appendChild(newMessageHeader)
+            newMessage.appendChild(newMessageContent)
+            messagesDiv.appendChild(newMessage);
+            submission_divs[submission_key] = newMessage
+            const li = document.createElement('li');
+            li.textContent = "Download Code: " + submission_key;
+            newMessageContent.appendChild(li);
+            for (const m of messages) {
+              const li = document.createElement('li');
+              li.textContent = m;
+              newMessageContent.appendChild(li);
+            }
+            // Toggle the visibility of the scrollable content
+            newMessageHeader.addEventListener('click', () => {
+              if (newMessageContent.style.display == 'none') {
+                newMessageContent.style.display = 'block';
+                toggleSign.innerHTML = '<i class="fas fa-minus-circle"></i>';
+              } else {
+                newMessageContent.style.display = 'none';
+                toggleSign.innerHTML = '<i class="fas fa-plus-circle"></i>';
+              }
+            });
+          } else {
+            var newMessageContent = document.getElementById("msg-" + submission_key);
+            var items = newMessageContent.getElementsByTagName("li");
+            var msgs = []
+            for (var i = 0; i < items.length; ++i) {
+                msgs.push(items[i].textContent)
+            }
+            for (const m of messages) {
+              if(!(msgs.includes(m))){
+                const li = document.createElement('li');
+                li.textContent = m;
+                newMessageContent.appendChild(li);
+              }
+            }
+            if(messages.includes("Results available for download")){
+              var header = document.getElementById("header-" + submission_key)
+              header.style.backgroundColor = '#7BAE37';
+              var subheader = document.getElementById("sub-header-" + submission_key)
+              subheader.innerHTML = " Submission Progress: Submission #" + (index+1) + "</br>Download Code: " + submission_key;
+            }
+          }
+          
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          console.log("WebSocket:" + json_msgs["messages"]);
+          
+        });
+    };
+
+    ws.onclose = function() {
+        console.log("WebSocket is closed now.");
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        // Close the socket to trigger reconnection logic
+        ws.close();
+    };
   };
+  connectWebSocket()
 
-  ws.onmessage = function(event) {
-      var messagesDiv = document.getElementById("messages");
-      var newMessage = document.createElement("div");
-      json_msgs = JSON.parse(event.data);
-      json_msgs["messages"].forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        newMessage.appendChild(li);
-      });
-      messagesDiv.appendChild(newMessage);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      console.log("WebSocket:" + json_msgs["messages"]);
 
-  };
 
-  ws.onclose = function() {
-      console.log("WebSocket is closed now.");
-  };
 </script>
 </head>
 <body>
@@ -55,7 +152,7 @@
                         Cloudbank Otter Grading - Beta
                     </h1>
                     <h2 class="subtitle">
-                        Upload your notebooks, grade them, and download results.
+                          Upload your notebooks, grade them, and download results.
                     </h2>
                 </div>
             </div>
@@ -124,17 +221,18 @@
                             <small><em>{{ download_message }}</em></small>
                             {% end %}
                         </form>
-                        <div id="messages">Progress</div>
                     </div>
-                    </div>
+                </div>
+                <div id="messages">
+                  <p class="title is-3">Notebook Grading Progress</p>
+                  <p id="none-msg">No submissions are being graded</p>
+                </div>
             </div>
         </div>
         <div class="hero is-info welcome is-small">
           <div class="hero-body">
               <div class="container">
-                  <h2 class="subtitle">
-                      Questions? Problems? email: sean.smorris at berkeley.edu
-                  </h2>
+                  <span class="has-text-right is-pulled-right">email: sean.smorris@berkeley.edu</span>
               </div>
           </div>
       </div>

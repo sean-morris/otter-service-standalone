@@ -48,7 +48,6 @@ class GradeNotebooks():
                            f"Notebook Folder: {notebook_folder}",
                            "debug",
                            log_debug)
-            user_queue.put(f"notebook count: {notebook_count}")
             # command = [
             #     'otter', 'grade',
             #     '-n', 'grader',
@@ -70,6 +69,7 @@ class GradeNotebooks():
                 output_dir=notebook_folder,
                 result_queue=user_queue
             )
+            user_queue.put("Results available for download")
             # log.write_logs(results_id, f"Step 6: Grading Start: {notebook_folder}",
             #                " ".join(command),
             #                "debug",

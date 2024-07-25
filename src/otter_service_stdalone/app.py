@@ -19,39 +19,42 @@ log_http = f'{os.environ.get("ENVIRONMENT")}-http-error'
 
 authorization_states = {}  # used to protect against cross-site request forgery attacks.
 session_queues = {}
+session_messages = {}
 session_callbacks = {}
 
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
-        user_id = self.get_secure_cookie("user").decode('utf-8')
-        self.user_id = user_id
-        self.user_queue = session_queues.get(user_id)
-        if not self.user_queue:
-            self.close()
-            return
-
-        # Start a periodic callback for this session
-        if user_id not in session_callbacks:
-            callback = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
-            session_callbacks[user_id] = callback
-            callback.start()
+        if self.get_secure_cookie("user"):
+            user_id = self.get_secure_cookie("user").decode('utf-8')
+            # Start a periodic callback for this session
+            if user_id not in session_callbacks:
+                session_callbacks[user_id] = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
+                session_callbacks[user_id].start()
 
     def on_message(self, message):
         pass  # No action needed on incoming message
 
     def on_close(self):
-        if hasattr(self, 'callback'):
-            self.callback.stop()
+        if self.get_secure_cookie("user"):
+            user_id = self.get_secure_cookie("user").decode('utf-8')
+            if user_id in session_callbacks and session_callbacks[user_id].callback:
+                session_callbacks[user_id].stop()
+                session_callbacks.pop(user_id)
 
     def send_results(self, user_id):
-        user_queue = session_queues.get(user_id)
-        if not user_queue.empty():
-            messages = []
-            while not user_queue.empty():
-                messages.append(user_queue.get())
-            self.write_message({"messages": messages})
-
+        try:
+            if user_id in session_queues:
+                user_queue_dict = session_queues[user_id]
+                user_messages_dict = session_messages[user_id]
+                if user_queue_dict:
+                    for result_id, q in user_queue_dict.items():
+                        if not q.empty():
+                            while not q.empty():
+                                user_messages_dict[result_id].append(q.get())
+                            self.write_message({"messages": user_messages_dict})
+        except tornado.websocket.WebSocketClosedError:
+            log.write_logs("ws-error", "Web Socket Problem", "", "", log_error)
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -84,7 +87,7 @@ class BaseHandler(tornado.web.RequestHandler):
         tornado (tornado.web.RequestHandler): The request handler
     """
     def get_current_user(self):
-        return self.get_secure_cookie("user")
+        return  self.get_secure_cookie("user")
 
     def write_error(self, status_code, **kwargs):
         log.write_logs("Http Error", f"{status_code} Error", "", "info", log_http)
@@ -172,31 +175,25 @@ class Download(BaseHandler):
             msg += "Please check the code or upload your notebooks "
             msg += "and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
-        elif not os.path.exists(f"{directory}/grading-logs.txt"):
+        elif not os.path.exists(f"{directory}/final_grades.csv"):
             m = "Download: Results Not Ready"
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "The results of your download are not ready yet. "
             msg += "Please check back."
             self.render("index.html",  download_message=msg, dcode=download_code)
         else:
-            if not os.path.isfile(f"{directory}/final_grades.csv"):
-                m = "Download: final_grades.csv does not exist"
-                t = "Problem grading notebooks see stack trace"
-                log.write_logs(download_code, m, t, "debug", log_debug)
-                with open(f"{directory}/final_grades.csv", "a") as f:
-                    m = "There was a problem grading your notebooks. Please see grading-logs.txt"
-                    f.write(m)
-                    f.close()
             m = "Download Success: Creating results.zip"
             log.write_logs(download_code, m, "", "debug", log_debug)
             with ZipFile(f"{directory}/results.zip", 'w') as zipF:
-                for file in ["final_grades.csv", "grading-logs.txt"]:
-                    if os.path.isfile(f"{directory}/{file}"):
-                        zipF.write(f"{directory}/{file}", file, compress_type=ZIP_DEFLATED)
+                final_file = "final_grades.csv"
+                if os.path.isfile(f"{directory}/{final_file}"):
+                    zipF.write(f"{directory}/{final_file}", final_file, compress_type=ZIP_DEFLATED)
                 for filename in os.listdir(f"{directory}/grading-summaries"):
                     file_path = os.path.join(f"{directory}/grading-summaries", filename)
                     if os.path.isfile(file_path):
-                        zipF.write(f"{directory}/grading-summaries/{filename}", f"grading-summaries/{filename}", compress_type=ZIP_DEFLATED)
+                        zipF.write(f"{file_path}", f"grading-summaries-do-not-distribute/{filename}", compress_type=ZIP_DEFLATED)
+                read_me = os.path.join(os.path.dirname(__file__), "download_files", "README_DO_NOT_DISTRIBUTE.txt")
+                zipF.write(read_me, "README_DO_NOT_DISTRIBUTE.txt", compress_type=ZIP_DEFLATED)
 
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
@@ -232,8 +229,8 @@ class Upload(BaseHandler):
         user = self.get_current_user()
         user_id = user.decode('utf-8')
         if user_id not in session_queues:
-            session_queues[user_id] = queue.Queue()
-
+            session_queues[user_id] = {}
+            session_messages[user_id] = {}
         g = grade_notebooks.GradeNotebooks()
         files = self.request.files
         results_path = str(uuid.uuid4())
@@ -264,11 +261,13 @@ class Upload(BaseHandler):
             fh.write(notebooks['body'])
             m = "Step 3: Uploaded Files Written to Disk"
             log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
-            m = "Please save this code. You can retrieve your files by submitting this code "
-            m += f"in the \"Results\" section to the right: {results_path}"
+            m = "Please save this code; it will also appear in the \"Notebook Grading Progress\" section below. You can "
+            m += f"retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
             try:
-                await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id])
+                session_queues[user_id][results_path] = queue.Queue()
+                session_messages[user_id][results_path] = []
+                await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
             except Exception as e:
                 log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
@@ -301,7 +300,6 @@ def main():
     try:
         application.listen(80)
         log.write_logs("Server Start", "Starting Server", "", "info", log_debug)
-
         tornado.ioloop.IOLoop.instance().start()
     except Exception as e:
         m = "Server Starting error"
