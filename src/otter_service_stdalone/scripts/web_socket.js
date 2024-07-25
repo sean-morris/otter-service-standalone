@@ -4,7 +4,7 @@
  */
 function connectWebSocket() {
     var loc = window.location;
-    var wsStart = loc.protocol === "https:" ? "wss://" : "ws://";
+    var wsStart = loc.protocol === "https:" ? "ws://" : "ws://";
     var wsUrl = wsStart + loc.host + "/update";
 
     var ws = new WebSocket(wsUrl);
