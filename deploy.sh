@@ -26,7 +26,7 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron
     rm -rf ./otter-grader
-elif if [ "$branch_name" != "dev" ]
+elif [ "$branch_name" != "dev" ]; then
     echo "$branch_name"
     # ns=$(kubectl get namespaces | grep otter-stdalone-${branch_name})
     # if [[ $ns == *"otter-stdalone-${branch_name}"* ]]; then
