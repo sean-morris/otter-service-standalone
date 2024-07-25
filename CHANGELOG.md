@@ -1,3 +1,10 @@
+## 1.1.2
+
+#### Enhancements made
+
+* Receiving updates while grading from Otter Grader
+* Otter Grade CSV to indicate which notebooks timeout
+
 ## 0.1.27
 
 #### Enhancements made
