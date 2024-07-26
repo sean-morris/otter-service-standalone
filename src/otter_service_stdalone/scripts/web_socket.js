@@ -4,7 +4,7 @@
  */
 function connectWebSocket() {
     var loc = window.location;
-    var wsStart = loc.protocol === "https:" ? "ws://" : "ws://";
+    var wsStart = loc.protocol === "https:" ? "wss://" : "ws://";
     var wsUrl = wsStart + loc.host + "/update";
 
     var ws = new WebSocket(wsUrl);
@@ -22,7 +22,8 @@ function connectWebSocket() {
         json_msgs = JSON.parse(event.data)["messages"];
         console.log(json_msgs)
         Object.entries(json_msgs).forEach(([submission_key, messages], index) => {
-          if (!(submission_key in submission_divs)){
+          var element = document.getElementById(submission_key);
+          if (element==null){
             messagesDiv.appendChild(_setUpNewSubmission(submission_key, index, messages))
           } else {
             _updateSubmission(submission_key, index, messages)
