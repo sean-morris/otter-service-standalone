@@ -121,6 +121,7 @@ function _updateSubmission(submission_key, index, messages){
       header.style.backgroundColor = '#7BAE37';
       var subheader = document.getElementById("sub-header-" + submission_key)
       subheader.innerHTML = " Submission Progress: Submission #" + (index+1) + "</br>Download Code: " + submission_key;
+      newMessageContent.style.display = 'none';
     }
 }
 
