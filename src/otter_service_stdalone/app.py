@@ -42,6 +42,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         """stop the periodic classback on close
         """
+        close_code = self.close_code
+        close_reason = self.close_reason
+        log.write_logs("socket", close_code, f"{close_code}: {close_reason}", "debug", log_debug)
         if self.get_secure_cookie("user"):
             user_id = self.get_secure_cookie("user").decode('utf-8')
             if user_id in session_callbacks and session_callbacks[user_id].callback:
