@@ -9,7 +9,7 @@ from otter_service_stdalone import fs_logging as log
 from otter_service_stdalone import user_auth as u_auth
 from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
-import queue
+from multiprocessing import Queue
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -40,14 +40,14 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         pass  # No action needed on incoming message
 
     def on_close(self):
-        """stop the periodic classback on close
+        """stop the periodic callback on close
         """
         close_code = self.close_code
         close_reason = self.close_reason
-        log.write_logs("socket", close_code, f"{close_code}: {close_reason}", "debug", log_debug)
         if self.get_secure_cookie("user"):
             user_id = self.get_secure_cookie("user").decode('utf-8')
             if user_id in session_callbacks and session_callbacks[user_id].callback:
+                log.write_logs("ws-close-removing-user!", close_code, f"{close_code}: {close_reason}", "debug", log_debug)
                 session_callbacks[user_id].stop()
                 session_callbacks.pop(user_id)
 
@@ -67,7 +67,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                                 user_messages_dict[result_id].append(q.get())
                             self.write_message({"messages": user_messages_dict})
         except tornado.websocket.WebSocketClosedError:
-            log.write_logs("ws-error", "Web Socket Problem", "", "", log_error)
+            log.write_logs("ws-error", "Web Socket Close Error", "", "", log_error)
+        except Exception:
+            log.write_logs("ws-error", "Web Socket Error", "", "", log_error)
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -279,7 +281,7 @@ class Upload(BaseHandler):
             m += f"retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
             try:
-                session_queues[user_id][results_path] = queue.Queue()
+                session_queues[user_id][results_path] = Queue()
                 session_messages[user_id][results_path] = []
                 await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
             except Exception as e:
