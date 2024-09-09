@@ -232,7 +232,7 @@ class Upload(BaseHandler):
 
     Args:
         tornado (tornado.web.RequestHandler): The upload request handler
-    """        
+    """
     @tornado.web.authenticated
     def get(self):
         # this just redirects to login and displays main page
@@ -293,6 +293,44 @@ class Upload(BaseHandler):
             self.render("index.html", message=m)
 
 
+class RemoveProgressHandler(BaseHandler):
+    """This handles requests to remove progress on a specific submission
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def set_default_headers(self):
+        """Set CORS headers to allow cross-origin requests."""
+        self.set_header("Access-Control-Allow-Origin", "*")  # Allow requests from any domain
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header("Access-Control-Allow-Methods", "DELETE, GET, POST, OPTIONS")
+
+    def options(self, *args):
+        """Respond to OPTIONS requests for preflight in CORS."""
+        self.set_status(204)
+        self.finish()
+
+    @tornado.web.authenticated
+    def get(self):
+        # this just redirects to login and displays main page
+        self.render("index.html", message=None)
+
+    @tornado.web.authenticated
+    def delete(self, result_id):
+        """this handles the post request and asynchronously launches the grader
+        """
+        user = self.get_current_user()
+        user_id = user.decode('utf-8')
+        log.write_logs(result_id, f"Deleting Result: {result_id}", "", "debug", log_debug)
+        if user_id in session_queues and result_id in session_queues[user_id]:
+            del session_queues[user_id][result_id]
+        if user_id in session_messages and result_id in session_messages[user_id]:
+            del session_messages[user_id][result_id]
+
+        self.write({'message': f'Item {result_id} removed successfully'})
+        self.set_status(200)
+
+
 settings = {
     "cookie_secret": str(uuid.uuid4()),
     "xsrf_cookies": True,
@@ -305,6 +343,7 @@ application = tornado.web.Application([
         (r"/upload", Upload),
         (r"/download", Download),
         (r"/update", WebSocketHandler),
+        (r"/remove/([a-zA-Z0-9\-]+)", RemoveProgressHandler),
         (r"/oauth_callback", GitHubOAuthHandler),
         (r"/otterhealth", HealthHandler),
         (r"/scripts/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(os.path.dirname(__file__), "scripts")}),

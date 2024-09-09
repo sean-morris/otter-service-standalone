@@ -96,8 +96,33 @@ function _setUpNewSubmission(submission_key, index, messages){
         toggleSign.innerHTML = '<i class="fas fa-plus-circle"></i>';
       }
     });
+
+
+    function getXsrfToken() {
+        return document.querySelector('input[name="_xsrf"]').value
+    }
+
     closeBtn.addEventListener('click', (event) => {
-        newMessage.remove();
+        const removeUri = `/remove/${submission_key}`;
+        fetch(removeUri, {
+            method: 'DELETE',
+            credentials: 'include', 
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRFToken': getXsrfToken()
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                newMessage.remove();
+            } else {
+                console.error(`Failed to remove item ${submission_key}`);
+            }
+        })
+        .catch(error => {
+            console.error('Failed to remove item:', error);
+        });
+        
     });
 
     return newMessage;
@@ -132,5 +157,4 @@ function _updateSubmission(submission_key, index, messages){
       newMessageContent.style.display = 'none';
     }
 }
-
 connectWebSocket()
