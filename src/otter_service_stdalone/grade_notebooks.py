@@ -2,6 +2,8 @@ import asyncio
 from otter_service_stdalone import fs_logging as log, upload_handle as uh
 import os
 from otter.grade import main as grade
+from multiprocessing import Process
+from tornado.ioloop import PeriodicCallback
 
 log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
 log_count = f'{os.environ.get("ENVIRONMENT")}-count'
@@ -12,7 +14,7 @@ class GradeNotebooks():
     """The class contains the async grade method for executing
         otter grader as well as a function for logging the number of 
         notebooks to be graded
-    """    
+    """
     def count_ipynb_files(self, directory, extension):
         """this count the files for logging purposes"""
         count = 0
@@ -47,28 +49,38 @@ class GradeNotebooks():
                            f"Notebook Folder: {notebook_folder}",
                            "debug",
                            log_debug)
+            p = Process(target=grade,
+                        kwargs = {
+                            "name": "grader",
+                            "autograder": p,
+                            "paths": (notebook_folder,),
+                            "containers": 10,
+                            "timeout": 300,
+                            "ext": "ipynb",
+                            "output_dir": notebook_folder,
+                            "result_queue": user_queue,
+                            "summaries": True,
+                        }
+                        )
+            p.start()
 
-            await grade(
-                name='grader',
-                autograder=p,
-                paths=(notebook_folder,),
-                containers=10,
-                timeout=300,
-                ext="ipynb",
-                output_dir=notebook_folder,
-                result_queue=user_queue
-            )
-            user_queue.put("Results available for download")
+            # Periodically check if the process is alive
+            def check_if_finished():
+                if not p.is_alive():
+                    log.write_logs(results_id, "Step 6: Grading: Finished",
+                                   f"{notebook_folder}",
+                                   "debug",
+                                   log_debug)
+                    log.write_logs(results_id, f"Grading: Finished: {notebook_folder}",
+                                   "",
+                                   "info",
+                                   log_error)
+                    periodic_callback.stop()
+                    return True
 
-            log.write_logs(results_id, "Step 6: Grading: Finished",
-                           f"{notebook_folder}",
-                           "debug",
-                           log_debug)
-            log.write_logs(results_id, f"Grading: Finished: {notebook_folder}",
-                           "",
-                           "info",
-                           log_error)
-            return True
+            periodic_callback = PeriodicCallback(check_if_finished, 500)
+            periodic_callback.start()
+
         except asyncio.TimeoutError:
             raise Exception(f'Grading timed out for {notebook_folder}')
         except Exception as e:

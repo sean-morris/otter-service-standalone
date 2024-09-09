@@ -61,14 +61,18 @@ function _setUpNewSubmission(submission_key, index, messages){
     newMessageHeader.id = "header-" + submission_key
     var toggleSign =  document.createElement("span");
     var submissionHeader =  document.createElement("span");
+    var closeBtn = document.createElement("button")
     submissionHeader.innerHTML = " Submission Progress: Submission #" + (index+1)
     submissionHeader.id = "sub-header-" + submission_key
+    closeBtn.className = "close-btn"
+    closeBtn.innerHTML = "&times;"
     newMessage.className = "collapsible"
     newMessageHeader.className = "header"
     toggleSign.innerHTML = '<i class="fas fa-minus-circle"></i>';
   
     newMessageHeader.appendChild(toggleSign)
     newMessageHeader.appendChild(submissionHeader)
+    newMessageHeader.appendChild(closeBtn)
     newMessageContent.className = "content"
     newMessageContent.style.display = "block"
     newMessage.appendChild(newMessageHeader)
@@ -83,7 +87,7 @@ function _setUpNewSubmission(submission_key, index, messages){
       newMessageContent.appendChild(li);
     }
     // Toggle the visibility of the scrollable content
-    newMessageHeader.addEventListener('click', () => {
+    newMessageHeader.addEventListener('click', (event) => {
       if (newMessageContent.style.display == 'none') {
         newMessageContent.style.display = 'block';
         toggleSign.innerHTML = '<i class="fas fa-minus-circle"></i>';
@@ -92,6 +96,35 @@ function _setUpNewSubmission(submission_key, index, messages){
         toggleSign.innerHTML = '<i class="fas fa-plus-circle"></i>';
       }
     });
+
+
+    function getXsrfToken() {
+        return document.querySelector('input[name="_xsrf"]').value
+    }
+
+    closeBtn.addEventListener('click', (event) => {
+        const removeUri = `/remove/${submission_key}`;
+        fetch(removeUri, {
+            method: 'DELETE',
+            credentials: 'include', 
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRFToken': getXsrfToken()
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                newMessage.remove();
+            } else {
+                console.error(`Failed to remove item ${submission_key}`);
+            }
+        })
+        .catch(error => {
+            console.error('Failed to remove item:', error);
+        });
+        
+    });
+
     return newMessage;
 }
 
@@ -124,6 +157,7 @@ function _updateSubmission(submission_key, index, messages){
       newMessageContent.style.display = 'none';
     }
 }
-
-
+function getXsrfToken() {
+  return xsrfToken;  // Use the token variable from the script
+}
 connectWebSocket()

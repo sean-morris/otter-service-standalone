@@ -9,7 +9,7 @@ from otter_service_stdalone import fs_logging as log
 from otter_service_stdalone import user_auth as u_auth
 from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
-import queue
+from multiprocessing import Queue
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -40,11 +40,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         pass  # No action needed on incoming message
 
     def on_close(self):
-        """stop the periodic classback on close
+        """stop the periodic callback on close
         """
-        close_code = self.close_code
-        close_reason = self.close_reason
-        log.write_logs("socket", close_code, f"{close_code}: {close_reason}", "debug", log_debug)
         if self.get_secure_cookie("user"):
             user_id = self.get_secure_cookie("user").decode('utf-8')
             if user_id in session_callbacks and session_callbacks[user_id].callback:
@@ -67,7 +64,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                                 user_messages_dict[result_id].append(q.get())
                             self.write_message({"messages": user_messages_dict})
         except tornado.websocket.WebSocketClosedError:
-            log.write_logs("ws-error", "Web Socket Problem", "", "", log_error)
+            log.write_logs("ws-error", "Web Socket Close Error", "", "", log_error)
+        except Exception:
+            log.write_logs("ws-error", "Web Socket Error", "", "", log_error)
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -230,7 +229,7 @@ class Upload(BaseHandler):
 
     Args:
         tornado (tornado.web.RequestHandler): The upload request handler
-    """        
+    """
     @tornado.web.authenticated
     def get(self):
         # this just redirects to login and displays main page
@@ -279,7 +278,7 @@ class Upload(BaseHandler):
             m += f"retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
             try:
-                session_queues[user_id][results_path] = queue.Queue()
+                session_queues[user_id][results_path] = Queue()
                 session_messages[user_id][results_path] = []
                 await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
             except Exception as e:
@@ -289,6 +288,44 @@ class Upload(BaseHandler):
             log.write_logs(results_path, m, "", "debug", log_debug)
             m = "It looks like you did not set the notebooks or autograder.zip or both!"
             self.render("index.html", message=m)
+
+
+class RemoveProgressHandler(BaseHandler):
+    """This handles requests to remove progress on a specific submission
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def set_default_headers(self):
+        """Set CORS headers to allow cross-origin requests."""
+        self.set_header("Access-Control-Allow-Origin", "*")  # Allow requests from any domain
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header("Access-Control-Allow-Methods", "DELETE, GET, POST, OPTIONS")
+
+    def options(self, *args):
+        """Respond to OPTIONS requests for preflight in CORS."""
+        self.set_status(204)
+        self.finish()
+
+    @tornado.web.authenticated
+    def get(self):
+        # this just redirects to login and displays main page
+        self.render("index.html", message=None)
+
+    @tornado.web.authenticated
+    def delete(self, result_id):
+        """this handles the post request and asynchronously launches the grader
+        """
+        user = self.get_current_user()
+        user_id = user.decode('utf-8')
+        log.write_logs(result_id, f"Deleting Result: {result_id}", "", "debug", log_debug)
+        if user_id in session_queues and result_id in session_queues[user_id]:
+            del session_queues[user_id][result_id]
+        if user_id in session_messages and result_id in session_messages[user_id]:
+            del session_messages[user_id][result_id]
+
+        self.write({'message': f'Item {result_id} removed successfully'})
+        self.set_status(200)
 
 
 settings = {
@@ -303,6 +340,7 @@ application = tornado.web.Application([
         (r"/upload", Upload),
         (r"/download", Download),
         (r"/update", WebSocketHandler),
+        (r"/remove/([a-zA-Z0-9\-]+)", RemoveProgressHandler),
         (r"/oauth_callback", GitHubOAuthHandler),
         (r"/otterhealth", HealthHandler),
         (r"/scripts/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(os.path.dirname(__file__), "scripts")}),

@@ -1,6 +1,6 @@
 <html>
 <head> 
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <title>Upload Form</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
@@ -18,12 +18,18 @@
       width: auto; 
       margin-bottom: 10px; 
   }
-
+  .fa-minus-circle, .fa-plus-circle {
+    position: relative;
+    top: 5px;
+    right: 4px
+  }
   /* Styles for the header */
   .header {
       background-color: #f1f1f1;
       padding: 10px;
       cursor: pointer;
+      display: flex;
+      justify-content: space-between
   }
 
   /* Styles for the content */
@@ -32,6 +38,17 @@
       overflow-y: auto; /* Enable vertical scrolling */
       padding: 10px;
       display: none;
+  }
+  .close-btn {
+    background-color: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    margin-left: auto;
+  }
+
+  .close-btn:hover {
+    color: red;
   }
 
 
