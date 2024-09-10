@@ -1,3 +1,11 @@
+## 1.1.8
+
+#### Enhancements made
+
+* Remove Button for Submission Progress
+* Submission Progress in UI
+* Otter Grade: prints each notebooks summary
+
 ## 1.1.2
 
 #### Enhancements made
