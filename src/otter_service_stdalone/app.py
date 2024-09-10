@@ -249,7 +249,7 @@ class Upload(BaseHandler):
         results_path = str(uuid.uuid4())
         autograder = self.request.files['autograder'][0] if "autograder" in files else None
         notebooks = self.request.files['notebooks'][0] if "notebooks" in files else None
-        log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
+        log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)    
         if autograder is not None and notebooks is not None:
             notebooks_fname = notebooks['filename']
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
@@ -294,19 +294,8 @@ class RemoveProgressHandler(BaseHandler):
     """This handles requests to remove progress on a specific submission
 
     Args:
-        tornado (tornado.web.RequestHandler): The request handler
+        tornado (BaseHandler): The request handler
     """
-    def set_default_headers(self):
-        """Set CORS headers to allow cross-origin requests."""
-        self.set_header("Access-Control-Allow-Origin", "*")  # Allow requests from any domain
-        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
-        self.set_header("Access-Control-Allow-Methods", "DELETE, GET, POST, OPTIONS")
-
-    def options(self, *args):
-        """Respond to OPTIONS requests for preflight in CORS."""
-        self.set_status(204)
-        self.finish()
-
     @tornado.web.authenticated
     def get(self):
         # this just redirects to login and displays main page
