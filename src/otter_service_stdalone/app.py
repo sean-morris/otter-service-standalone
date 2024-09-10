@@ -4,10 +4,12 @@ import tornado.web
 import tornado.auth
 import os
 import uuid
+import tornado.websocket
 from otter_service_stdalone import fs_logging as log
 from otter_service_stdalone import user_auth as u_auth
 from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
+from multiprocessing import Queue
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -16,6 +18,55 @@ log_error = f'{os.environ.get("ENVIRONMENT")}-logs'
 log_http = f'{os.environ.get("ENVIRONMENT")}-http-error'
 
 authorization_states = {}  # used to protect against cross-site request forgery attacks.
+session_queues = {}
+session_messages = {}
+session_callbacks = {}
+
+
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    """This handles updates to the application from otter-grader
+    """
+    def open(self):
+        """if logged in, start a callback once a second to see if there messages for the
+            logged in user
+        """
+        if self.get_secure_cookie("user"):
+            user_id = self.get_secure_cookie("user").decode('utf-8')
+            if user_id not in session_callbacks:
+                session_callbacks[user_id] = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
+                session_callbacks[user_id].start()
+
+    def on_message(self, message):
+        pass  # No action needed on incoming message
+
+    def on_close(self):
+        """stop the periodic callback on close
+        """
+        if self.get_secure_cookie("user"):
+            user_id = self.get_secure_cookie("user").decode('utf-8')
+            if user_id in session_callbacks and session_callbacks[user_id].callback:
+                session_callbacks[user_id].stop()
+                session_callbacks.pop(user_id)
+
+    def send_results(self, user_id):
+        """if there are messages for this user, send them to application by submission.
+            We save the messages in the session so if refresh on client side they still
+            have the updates
+        """
+        try:
+            if user_id in session_queues:
+                user_queue_dict = session_queues[user_id]
+                user_messages_dict = session_messages[user_id]
+                if user_queue_dict:
+                    for result_id, q in user_queue_dict.items():
+                        if not q.empty():
+                            while not q.empty():
+                                user_messages_dict[result_id].append(q.get())
+                            self.write_message({"messages": user_messages_dict})
+        except tornado.websocket.WebSocketClosedError:
+            log.write_logs("ws-error", "Web Socket Close Error", "", "", log_error)
+        except Exception:
+            log.write_logs("ws-error", "Web Socket Error", "", "", log_error)
 
 
 class HealthHandler(tornado.web.RequestHandler):
@@ -136,27 +187,26 @@ class Download(BaseHandler):
             msg += "Please check the code or upload your notebooks "
             msg += "and autograder.zip for grading again."
             self.render("index.html",  download_message=msg)
-        elif not os.path.exists(f"{directory}/grading-logs.txt"):
+        elif not os.path.exists(f"{directory}/final_grades.csv"):
             m = "Download: Results Not Ready"
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "The results of your download are not ready yet. "
             msg += "Please check back."
             self.render("index.html",  download_message=msg, dcode=download_code)
         else:
-            if not os.path.isfile(f"{directory}/final_grades.csv"):
-                m = "Download: final_grades.csv does not exist"
-                t = "Problem grading notebooks see stack trace"
-                log.write_logs(download_code, m, t, "debug", log_debug)
-                with open(f"{directory}/final_grades.csv", "a") as f:
-                    m = "There was a problem grading your notebooks. Please see grading-logs.txt"
-                    f.write(m)
-                    f.close()
             m = "Download Success: Creating results.zip"
             log.write_logs(download_code, m, "", "debug", log_debug)
             with ZipFile(f"{directory}/results.zip", 'w') as zipF:
-                for file in ["final_grades.csv", "grading-logs.txt"]:
-                    if os.path.isfile(f"{directory}/{file}"):
-                        zipF.write(f"{directory}/{file}", file, compress_type=ZIP_DEFLATED)
+                final_file = "final_grades.csv"
+                if os.path.isfile(f"{directory}/{final_file}"):
+                    zipF.write(f"{directory}/{final_file}", final_file, compress_type=ZIP_DEFLATED)
+                for filename in os.listdir(f"{directory}/grading-summaries"):
+                    file_path = os.path.join(f"{directory}/grading-summaries", filename)
+                    if os.path.isfile(file_path):
+                        f_path = f"grading-summaries-do-not-distribute/{filename}"
+                        zipF.write(f"{file_path}", f_path, compress_type=ZIP_DEFLATED)
+                read_me = os.path.join(os.path.dirname(__file__), "static_files", "README_DO_NOT_DISTRIBUTE.txt")
+                zipF.write(read_me, "README_DO_NOT_DISTRIBUTE.txt", compress_type=ZIP_DEFLATED)
 
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
@@ -189,6 +239,11 @@ class Upload(BaseHandler):
     async def post(self):
         """this handles the post request and asynchronously launches the grader
         """
+        user = self.get_current_user()
+        user_id = user.decode('utf-8')
+        if user_id not in session_queues:
+            session_queues[user_id] = {}
+            session_messages[user_id] = {}
         g = grade_notebooks.GradeNotebooks()
         files = self.request.files
         results_path = str(uuid.uuid4())
@@ -219,11 +274,13 @@ class Upload(BaseHandler):
             fh.write(notebooks['body'])
             m = "Step 3: Uploaded Files Written to Disk"
             log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
-            m = "Please save this code. You can retrieve your files by submitting this code "
-            m += f"in the \"Results\" section to the right: {results_path}"
+            m = "Please save this code; it appears in the \"Notebook Grading Progress\" section below. You can "
+            m += f"retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
             self.render("index.html", message=m)
             try:
-                await g.grade(auto_p, notebooks_path, results_path)
+                session_queues[user_id][results_path] = Queue()
+                session_messages[user_id][results_path] = []
+                await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
             except Exception as e:
                 log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
@@ -231,6 +288,44 @@ class Upload(BaseHandler):
             log.write_logs(results_path, m, "", "debug", log_debug)
             m = "It looks like you did not set the notebooks or autograder.zip or both!"
             self.render("index.html", message=m)
+
+
+class RemoveProgressHandler(BaseHandler):
+    """This handles requests to remove progress on a specific submission
+
+    Args:
+        tornado (tornado.web.RequestHandler): The request handler
+    """
+    def set_default_headers(self):
+        """Set CORS headers to allow cross-origin requests."""
+        self.set_header("Access-Control-Allow-Origin", "*")  # Allow requests from any domain
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header("Access-Control-Allow-Methods", "DELETE, GET, POST, OPTIONS")
+
+    def options(self, *args):
+        """Respond to OPTIONS requests for preflight in CORS."""
+        self.set_status(204)
+        self.finish()
+
+    @tornado.web.authenticated
+    def get(self):
+        # this just redirects to login and displays main page
+        self.render("index.html", message=None)
+
+    @tornado.web.authenticated
+    def delete(self, result_id):
+        """this handles the post request and asynchronously launches the grader
+        """
+        user = self.get_current_user()
+        user_id = user.decode('utf-8')
+        log.write_logs(result_id, f"Deleting Result: {result_id}", "", "debug", log_debug)
+        if user_id in session_queues and result_id in session_queues[user_id]:
+            del session_queues[user_id][result_id]
+        if user_id in session_messages and result_id in session_messages[user_id]:
+            del session_messages[user_id][result_id]
+
+        self.write({'message': f'Item {result_id} removed successfully'})
+        self.set_status(200)
 
 
 settings = {
@@ -244,8 +339,11 @@ application = tornado.web.Application([
         (r"/login", LoginHandler),
         (r"/upload", Upload),
         (r"/download", Download),
+        (r"/update", WebSocketHandler),
+        (r"/remove/([a-zA-Z0-9\-]+)", RemoveProgressHandler),
         (r"/oauth_callback", GitHubOAuthHandler),
         (r"/otterhealth", HealthHandler),
+        (r"/scripts/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(os.path.dirname(__file__), "scripts")}),
         ], **settings, debug=False)
 
 
