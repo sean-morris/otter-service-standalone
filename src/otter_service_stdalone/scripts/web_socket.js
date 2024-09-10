@@ -122,6 +122,7 @@ function _setUpNewSubmission(submission_key, index, messages){
         .catch(error => {
             console.error('Failed to remove item:', error);
         });
+        event.stopPropagation();
         
     });
 
