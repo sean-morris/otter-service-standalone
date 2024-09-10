@@ -192,7 +192,7 @@ class Download(BaseHandler):
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "The results of your download are not ready yet. "
             msg += "Please check back."
-            self.render("index.html",  download_message=msg, dcode=download_code)
+            self.render("index.html", download_message=msg, dcode=download_code)
         else:
             m = "Download Success: Creating results.zip"
             log.write_logs(download_code, m, "", "debug", log_debug)

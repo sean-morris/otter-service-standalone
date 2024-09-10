@@ -158,7 +158,4 @@ function _updateSubmission(submission_key, index, messages){
       newMessageContent.style.display = 'none';
     }
 }
-function getXsrfToken() {
-  return xsrfToken;  // Use the token variable from the script
-}
 connectWebSocket()
