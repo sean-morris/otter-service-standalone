@@ -1,3 +1,10 @@
+## 1.1.9
+
+#### Enhancements made
+
+* Otter Grade: checks autograder.zip
+
+
 ## 1.1.8
 
 #### Enhancements made
@@ -5,6 +12,7 @@
 * Remove Button for Submission Progress
 * Submission Progress in UI
 * Otter Grade: prints each notebooks summary
+* Otter Grade: checks autograder.zip
 
 ## 1.1.2
 

@@ -115,6 +115,9 @@ function _setUpNewSubmission(submission_key, index, messages){
         .then(response => {
             if (response.ok) {
                 newMessage.remove();
+                if(document.querySelector('div[id="messages"]').childElementCount == 1){
+                  document.getElementById("none-msg").style.display = "block";
+                }
             } else {
                 console.error(`Failed to remove item ${submission_key}`);
             }
@@ -122,6 +125,7 @@ function _setUpNewSubmission(submission_key, index, messages){
         .catch(error => {
             console.error('Failed to remove item:', error);
         });
+        event.stopPropagation();
         
     });
 
