@@ -11,6 +11,8 @@ from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
 from multiprocessing import Queue
 
+from .util import otter_version_correct
+
 
 __UPLOADS__ = "/tmp/uploads"
 log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
@@ -264,25 +266,36 @@ class Upload(BaseHandler):
             if not os.path.exists(__UPLOADS__):
                 os.mkdir(__UPLOADS__)
             auto_p = f"{__UPLOADS__}/{autograder_name}"
+            
             notebooks_path = f"{__UPLOADS__}/{notebooks_name}"
             m = "Step 2a: Uploaded File Names Determined"
             log.write_logs(results_path, m, f"notebooks path: {notebooks_path}", "debug", log_debug)
             fh = open(auto_p, 'wb')
             fh.write(autograder['body'])
-
-            fh = open(notebooks_path, 'wb')
-            fh.write(notebooks['body'])
-            m = "Step 3: Uploaded Files Written to Disk"
+            m = "Step 3A: Uploaded autograder.zip files written to disk - now checking otter version"
             log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
-            m = "Please save this code; it appears in the \"Notebook Grading Progress\" section below. You can "
-            m += f"retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
-            self.render("index.html", message=m)
-            try:
-                session_queues[user_id][results_path] = Queue()
-                session_messages[user_id][results_path] = []
-                await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
-            except Exception as e:
-                log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
+            if not otter_version_correct(auto_p):
+                m = "Step 3A-1: autograder.zip is wrong version of otter-grader; must be > 5.5.0"
+                log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
+                m = "You need to make sure the autograder.zip uses otter-grader version >5.5.0. BUT you do not need "
+                m += "to re-generate your autograder.zip; un-archive autograder.zip and change the version in either "
+                m += "requirements.txt or environmental.yaml depending on the version of otter-grader the autograder.zip "
+                m += "is created with."
+                self.render("index.html", message=m)
+            else:
+                fh = open(notebooks_path, 'wb')
+                fh.write(notebooks['body'])
+                m = "Step 3B: Uploaded Notebook File Written to Disk"
+                log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
+                m = "Please save this code; it appears in the \"Notebook Grading Progress\" section below. You can "
+                m += f"retrieve your files by submitting this code in the \"Results\" section to the right: {results_path}"
+                self.render("index.html", message=m)
+                try:
+                    session_queues[user_id][results_path] = Queue()
+                    session_messages[user_id][results_path] = []
+                    await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
+                except Exception as e:
+                    log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
             m = "Step 2b: Uploaded Files not given"
             log.write_logs(results_path, m, "", "debug", log_debug)
