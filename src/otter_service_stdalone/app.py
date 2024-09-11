@@ -35,7 +35,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             if user_id not in session_callbacks:
                 session_callbacks[user_id] = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
                 session_callbacks[user_id].start()
-
+    
     def on_message(self, message):
         pass  # No action needed on incoming message
 
@@ -44,7 +44,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         """
         if self.get_secure_cookie("user"):
             user_id = self.get_secure_cookie("user").decode('utf-8')
-            if user_id in session_callbacks and session_callbacks[user_id].callback:
+            if user_id in session_callbacks and session_callbacks[user_id]:
                 session_callbacks[user_id].stop()
                 session_callbacks.pop(user_id)
 
@@ -62,7 +62,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                         if not q.empty():
                             while not q.empty():
                                 user_messages_dict[result_id].append(q.get())
-                            self.write_message({"messages": user_messages_dict})
+                    self.write_message({"messages": user_messages_dict})
         except tornado.websocket.WebSocketClosedError:
             log.write_logs("ws-error", "Web Socket Close Error", "", "", log_error)
         except Exception:
@@ -183,10 +183,10 @@ class Download(BaseHandler):
             m = "Download: Directory for Code Not existing"
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "The download code appears to not be correct or expired "
-            msg += f"- results are deleted regularly: {download_code}."
+            msg += f"- results are deleted regularly: {download_code}. "
             msg += "Please check the code or upload your notebooks "
             msg += "and autograder.zip for grading again."
-            self.render("index.html",  download_message=msg)
+            self.render("index.html", download_message=msg)
         elif not os.path.exists(f"{directory}/final_grades.csv"):
             m = "Download: Results Not Ready"
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
