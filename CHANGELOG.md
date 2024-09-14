@@ -1,3 +1,9 @@
+## 1.1.10
+
+#### Enhancements made
+
+* Otter Grade: fixed otter-grader version check
+
 ## 1.1.9
 
 #### Enhancements made
