@@ -17,7 +17,7 @@ def is_version_5(zip_ref, target_file, reg):
 
 def otter_version_correct(autograder_path):
     requirements_regex = re.compile(r"otter-grader==([\d\.]+)")
-    environment_regex = re.compile(r"otter-grader: ([\d\.]+)")
+    environment_regex = re.compile(r"otter-grader==([\d\.]+)")
     # Open the zip file
     with zipfile.ZipFile(autograder_path, 'r') as zip_ref:
         # Get a list of files in the zip
@@ -28,8 +28,8 @@ def otter_version_correct(autograder_path):
         env_target_file = None
         if 'requirements.txt' in file_list:
             req_target_file = 'requirements.txt'
-        if 'environment.yaml' in file_list:
-            env_target_file = 'environment.yaml'
+        if 'environment.yml' in file_list:
+            env_target_file = 'environment.yml'
 
         otter_in_req = is_version_5(zip_ref, req_target_file, requirements_regex)
         otter_in_env = is_version_5(zip_ref, env_target_file, environment_regex)
