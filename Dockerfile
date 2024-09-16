@@ -1,6 +1,6 @@
 ARG BUILD_VERSION
 
-FROM ubuntu:20.04 AS base
+FROM ubuntu:22.04 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG OTTER_SERVICE_STDALONE_VERSION
 
@@ -10,8 +10,7 @@ RUN apt-get update && \
     apt-get update && \
     add-apt-repository -y ppa:longsleep/golang-backports
 
-RUN apt-get install -y python3 && \
-    apt-get install -y python3-pip && \
+RUN apt-get install -y python3-pip && \
     apt-get install -y curl && \
     apt-get install -y golang
 
@@ -30,7 +29,7 @@ ADD ./requirements/prod.txt /etc/otter-service-stdalone/requirements.txt
 RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
 
 # install docker cli
-ENV DOCKER_VERSION 5:20.10.17~3-0~ubuntu-focal
+ENV DOCKER_VERSION 5:20.10.17~3-0~ubuntu-jammy
 RUN apt-get update
 RUN apt-get install -y \
     ca-certificates \
@@ -45,7 +44,6 @@ RUN echo \
 RUN apt-get update
 RUN apt-get -y install docker-ce-cli=${DOCKER_VERSION}
 RUN apt-get -y install unzip
-RUN apt install -y python3.8-venv
 
 WORKDIR /opt
 EXPOSE 80
