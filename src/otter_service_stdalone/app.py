@@ -275,9 +275,9 @@ class Upload(BaseHandler):
             m = "Step 3A: Uploaded autograder.zip files written to disk - now checking otter version"
             log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
             if not otter_version_correct(auto_p):
-                m = "Step 3A-1: autograder.zip is wrong version of otter-grader; must be > 5.5.0"
+                m = "Step 3A-1: autograder.zip is wrong version of otter-grader; must be >= 5.5.0"
                 log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
-                m = "You need to make sure the autograder.zip uses otter-grader version >5.5.0. BUT you do not need "
+                m = "You need to make sure the autograder.zip uses otter-grader version >=5.5.0. BUT you do not need "
                 m += "to re-generate your autograder.zip; un-archive autograder.zip and change the version in either "
                 m += "requirements.txt or environmental.yaml depending on the version of otter-grader the autograder.zip "
                 m += "is created with."
