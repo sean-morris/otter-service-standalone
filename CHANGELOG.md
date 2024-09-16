@@ -1,3 +1,10 @@
+## 1.1.11
+
+#### Enhancements made
+
+* Updated version message
+
+
 ## 1.1.10
 
 #### Enhancements made
