@@ -28,8 +28,10 @@ function connectWebSocket() {
           } else {
             _updateSubmission(submission_key, index, messages)
           }
-          
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          const isAtBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop === messagesDiv.clientHeight;
+          if (isAtBottom) {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          }
         });
     };
 
