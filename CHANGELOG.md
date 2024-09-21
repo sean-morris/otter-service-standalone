@@ -1,8 +1,9 @@
-## 1.1.11
+## 1.1.12
 
 #### Enhancements made
 
 * Updated version message
+* Fixed Scrolling Div
 
 
 ## 1.1.10
