@@ -57,7 +57,7 @@ class GradeNotebooks():
                             "autograder": p,
                             "paths": (notebook_folder,),
                             "containers": 10,
-                            "timeout": 300,
+                            "timeout": 600,
                             "ext": "ipynb",
                             "output_dir": notebook_folder,
                             "result_queue": user_queue,
