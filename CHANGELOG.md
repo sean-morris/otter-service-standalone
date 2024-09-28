@@ -1,9 +1,11 @@
-## 1.1.12
+## 1.1.13
 
 #### Enhancements made
 
 * Updated version message
 * Fixed Scrolling Div
+* Added Memory to pod
+* Increased Timeout
 
 
 ## 1.1.10
