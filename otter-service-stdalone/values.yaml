@@ -73,11 +73,11 @@ dind_image:
     limits:
       cpu: 2500m
       ephemeral-storage: 1Gi
-      memory: 8Gi
+      memory: 11Gi
     requests:
       cpu: 2500m
       ephemeral-storage: 1Gi
-      memory: 5Gi
+      memory: 11Gi
   volumeMounts:
     - name: opt-volume
       mountPath: /opt
