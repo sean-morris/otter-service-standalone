@@ -1,7 +1,8 @@
 import asyncio
+import logging
 from otter_service_stdalone import fs_logging as log, upload_handle as uh
 import os
-from otter.grade import main as grade
+from otter.grade import main as grade, loggers
 from multiprocessing import Process
 from tornado.ioloop import PeriodicCallback
 
@@ -49,13 +50,14 @@ class GradeNotebooks():
                            f"Notebook Folder: {notebook_folder}",
                            "debug",
                            log_debug)
+            loggers.set_level(logging.INFO)
             p = Process(target=grade,
                         kwargs = {
                             "name": "grader",
                             "autograder": p,
                             "paths": (notebook_folder,),
                             "containers": 10,
-                            "timeout": 300,
+                            "timeout": 1200,
                             "ext": "ipynb",
                             "output_dir": notebook_folder,
                             "result_queue": user_queue,
