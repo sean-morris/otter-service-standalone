@@ -7,7 +7,7 @@ branch_name=${branch_name:-HEAD}
 echo $branch_name
 if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     #Temp while building otter-grader locally
-    cp -r ../otter-grader ./otter-grader
+    #cp -r ../otter-grader ./otter-grader
     
     python3 -m build
     python3 -m pip install dist/otter_service_stdalone-${version}.tar.gz --force
@@ -21,11 +21,12 @@ if [ "$branch_name" == "dev" ] && [ "$1" == "build" ]; then
     docker push gcr.io/data8x-scratch/otter-srv-stdalone:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone
 
+
     # build and push otter-srv-stdalone-remove-uploads-cron
     docker build -t gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version -t gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron -f Dockerfile-remove-uploads-cron .
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron:$version
     docker push gcr.io/data8x-scratch/otter-srv-stdalone-remove-uploads-cron
-    rm -rf ./otter-grader
+    #rm -rf ./otter-grader
 elif [ "$branch_name" != "dev" ]; then
     ns=$(kubectl get namespaces | grep otter-stdalone-${branch_name})
     if [[ $ns == *"otter-stdalone-${branch_name}"* ]]; then
