@@ -8,7 +8,7 @@ def is_version_5_or_greater(zip_ref, target_file, reg):
             content = file.read().decode('utf-8')
             match = reg.search(content)
             if match:
-                version = match.group(1)
+                version = match.group(2)
                 version_nums = version.split(".")
                 if len(version_nums) > 0 and int(version_nums[0]) >= 5:
                     return True
@@ -16,8 +16,8 @@ def is_version_5_or_greater(zip_ref, target_file, reg):
 
 
 def otter_version_correct(autograder_path):
-    requirements_regex = re.compile(r"(otter-grader)(\[[\w,]+\])?==([\d\.]+)")
-    environment_regex = re.compile(r"(otter-grader)(\[[\w,]+\])?==([\d\.]+)")
+    requirements_regex = re.compile(r"otter-grader(\[.*?\])?==([\d.]+)")
+    environment_regex = re.compile(r"otter-grader(\[.*?\])?==([\d.]+)")
     # Open the zip file
     with zipfile.ZipFile(autograder_path, 'r') as zip_ref:
         # Get a list of files in the zip
