@@ -1,3 +1,9 @@
+## 1.1.16
+
+#### Enhancements made
+
+* Captures otter-grader version format changes in otter-grader version 6
+
 ## 1.1.14
 
 #### Enhancements made
