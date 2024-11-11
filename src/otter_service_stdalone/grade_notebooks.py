@@ -2,7 +2,8 @@ import asyncio
 import logging
 from otter_service_stdalone import fs_logging as log, upload_handle as uh
 import os
-from otter.grade import main as grade, loggers
+from otter.grade import main as grade
+from otter import logging as loggers
 from multiprocessing import Process
 from tornado.ioloop import PeriodicCallback
 
