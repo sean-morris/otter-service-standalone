@@ -41,7 +41,7 @@ otter_srv_stdalone:
     limits:
       cpu: 500m
       ephemeral-storage: 1Gi
-      memory: 2Gi
+      memory: 1Gi
     requests:
       cpu: 500m
       ephemeral-storage: 1Gi
@@ -71,13 +71,13 @@ dind_image:
     privileged: true 
   resources:
     limits:
-      cpu: 2500m
+      cpu: 2000m
       ephemeral-storage: 1Gi
-      memory: 11Gi
+      memory: 10Gi
     requests:
-      cpu: 2500m
+      cpu: 2000m
       ephemeral-storage: 1Gi
-      memory: 11Gi
+      memory: 10Gi
   volumeMounts:
     - name: opt-volume
       mountPath: /opt
