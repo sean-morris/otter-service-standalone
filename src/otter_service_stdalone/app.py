@@ -261,7 +261,9 @@ class Upload(BaseHandler):
                 notebooks_name = f"{results_path}/{notebooks_fname}"
                 os.mkdir(f"{__UPLOADS__}/{results_path}")
             autograder_fname = autograder['filename']
-            autograder_extn = os.path.splitext(autograder_fname)[1]
+            arr_autograder_fname = os.path.splitext(autograder_fname)
+            autograder_orig_name = arr_autograder_fname[0]
+            autograder_extn = arr_autograder_fname[1]
             autograder_name = str(uuid.uuid4()) + autograder_extn
             if not os.path.exists(__UPLOADS__):
                 os.mkdir(__UPLOADS__)
@@ -293,7 +295,7 @@ class Upload(BaseHandler):
                 try:
                     session_queues[user_id][results_path] = Queue()
                     session_messages[user_id][results_path] = []
-                    await g.grade(auto_p, notebooks_path, results_path, session_queues[user_id].get(results_path))
+                    await g.grade(auto_p, notebooks_path, autograder_orig_name, results_path, session_queues[user_id].get(results_path))
                 except Exception as e:
                     log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
