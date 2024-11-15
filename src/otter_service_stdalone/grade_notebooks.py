@@ -25,13 +25,14 @@ class GradeNotebooks():
                 count += 1
         return count
 
-    async def grade(self, p, notebooks_path, results_id, user_queue):
+    async def grade(self, p, notebooks_path, image_name, results_id, user_queue):
         """Calls otter grade asynchronously and writes the various log files
         and results of grading generating by otter-grader
 
         Args:
             p (str): the path to autograder.zip -- the solutions
-            notebooks_path (str): the path to the folder of notebooks to be graded
+            notebooks_path (str): the path to the folder of notebooks to be graded\
+            image_name (str): the auotgrader.zip file name used as the name for the otter grade docker image
             results_id (str): used for identifying logs
 
         Raises:
@@ -54,7 +55,7 @@ class GradeNotebooks():
             loggers.set_level(logging.INFO)
             p = Process(target=grade,
                         kwargs = {
-                            "name": "grader",
+                            "name": image_name,
                             "autograder": p,
                             "paths": (notebook_folder,),
                             "containers": 10,

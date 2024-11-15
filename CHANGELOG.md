@@ -1,3 +1,9 @@
+## 1.1.20
+
+#### Enhancements made
+
+* Named Docker Image the same as autograder.zip
+
 ## 1.1.19
 
 #### Enhancements made
