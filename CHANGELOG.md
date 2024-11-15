@@ -1,3 +1,9 @@
+## 1.1.19
+
+#### Enhancements made
+
+* Docker Caches Images
+
 ## 1.1.18
 
 #### Enhancements made

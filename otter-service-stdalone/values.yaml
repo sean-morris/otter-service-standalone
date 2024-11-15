@@ -78,11 +78,15 @@ dind_image:
       cpu: 2000m
       ephemeral-storage: 1Gi
       memory: 10Gi
+  volumeClaimName: otter-docker-cache-claim
+  storageClassStorageReqest: 40Gi
   volumeMounts:
     - name: opt-volume
       mountPath: /opt
     - name: tmp-volume
       mountPath: /tmp
+    - name: docker-cache-volume
+      mountPath: /var/lib/docker
   env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
@@ -130,7 +134,6 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 2
   targetCPUUtilizationPercentage: 80
-
 
 ingress:
   name: otter-stdalone-ingress 
