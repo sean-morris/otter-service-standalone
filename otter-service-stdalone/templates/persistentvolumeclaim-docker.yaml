@@ -1,4 +1,4 @@
-{{- if .Values.volume_claims.create -}}
+{{- if .Values.dind_image.volume_claim.create -}}
 {{- $scName := .Values.storageClass.name -}}
 {{- $accessMode := .Values.storageClass.accessModes -}}
 {{- $storageRequestDocker := .Values.dind_image.storageClassStorageReqest -}}

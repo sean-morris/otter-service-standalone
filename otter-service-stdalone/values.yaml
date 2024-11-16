@@ -80,6 +80,8 @@ dind_image:
       memory: 10Gi
   volumeClaimName: otter-docker-cache-claim
   storageClassStorageReqest: 80Gi
+  volume_claim:
+    create: false
   volumeMounts:
     - name: opt-volume
       mountPath: /opt
