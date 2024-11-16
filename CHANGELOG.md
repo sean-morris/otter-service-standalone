@@ -1,4 +1,10 @@
-## 1.1.21
+## 1.1.23
+
+#### Enhancements made
+
+* Actual Version Check!
+
+## 1.1.22
 
 #### Enhancements made
 
