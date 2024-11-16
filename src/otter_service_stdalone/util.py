@@ -2,7 +2,7 @@ import re
 import zipfile
 
 
-def is_version_5_or_greater(zip_ref, target_file, reg):
+def is_version_6_or_greater(zip_ref, target_file, reg):
     if target_file:
         with zip_ref.open(target_file) as file:
             content = file.read().decode('utf-8')
@@ -10,7 +10,7 @@ def is_version_5_or_greater(zip_ref, target_file, reg):
             if match:
                 version = match.group(2)
                 version_nums = version.split(".")
-                if len(version_nums) > 0 and int(version_nums[0]) >= 5:
+                if len(version_nums) >= 3 and int(version_nums[0]) >= 6 and int(version_nums[2]) >= 4:
                     return True
     return False
 
@@ -31,6 +31,6 @@ def otter_version_correct(autograder_path):
         if 'environment.yml' in file_list:
             env_target_file = 'environment.yml'
 
-        otter_in_req = is_version_5_or_greater(zip_ref, req_target_file, requirements_regex)
-        otter_in_env = is_version_5_or_greater(zip_ref, env_target_file, environment_regex)
+        otter_in_req = is_version_6_or_greater(zip_ref, req_target_file, requirements_regex)
+        otter_in_env = is_version_6_or_greater(zip_ref, env_target_file, environment_regex)
         return otter_in_req or otter_in_env
