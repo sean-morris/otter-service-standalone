@@ -1,3 +1,9 @@
+## 1.1.21
+
+#### Enhancements made
+
+* Increased Docker image storage
+
 ## 1.1.20
 
 #### Enhancements made
