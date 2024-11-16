@@ -1,0 +1,17 @@
+{{- if .Values.volume_claims.create -}}
+{{- $scName := .Values.storageClass.name -}}
+{{- $accessMode := .Values.storageClass.accessModes -}}
+{{- $storageRequestDocker := .Values.dind_image.storageClassStorageReqest -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .Values.dind_image.volumeClaimName }}
+spec:
+  accessModes: 
+    - {{ $accessMode }}
+  volumeMode: Filesystem
+  storageClassName: {{ $scName }}
+  resources:
+    requests:
+      storage: {{ $storageRequestDocker }}
+{{ end }}

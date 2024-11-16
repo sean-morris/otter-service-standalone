@@ -1,3 +1,21 @@
+## 1.1.21
+
+#### Enhancements made
+
+* Increased Docker image storage
+
+## 1.1.20
+
+#### Enhancements made
+
+* Named Docker Image the same as autograder.zip
+
+## 1.1.19
+
+#### Enhancements made
+
+* Docker Caches Images
+
 ## 1.1.18
 
 #### Enhancements made

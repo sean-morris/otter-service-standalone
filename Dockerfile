@@ -29,7 +29,7 @@ ADD ./requirements/prod.txt /etc/otter-service-stdalone/requirements.txt
 RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
 
 # install docker cli
-ENV DOCKER_VERSION 5:20.10.17~3-0~ubuntu-jammy
+ENV DOCKER_VERSION=5:20.10.17~3-0~ubuntu-jammy
 RUN apt-get update
 RUN apt-get install -y \
     ca-certificates \
@@ -51,12 +51,12 @@ EXPOSE 80
 # COPY ./otter-grader/ /opt/otter-grader/
 # RUN python3 -m pip install  --no-cache-dir /opt/otter-grader/ --force
 
-FROM base as image-local
+FROM base AS image-local
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
 RUN python3 -m pip install /opt/otter-service-stdalone/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz
 ENTRYPOINT ["otter_service_stdalone"]
 
-FROM base as image-cloud
+FROM base AS image-cloud
 RUN python3 -m pip install otter-service-stdalone==${OTTER_SERVICE_STDALONE_VERSION}
 ENTRYPOINT ["otter_service_stdalone"]
 

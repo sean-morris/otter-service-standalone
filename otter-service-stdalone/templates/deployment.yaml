@@ -76,6 +76,9 @@ spec:
         - name: tmp-volume
           persistentVolumeClaim:
             claimName: {{ index .Values.volume_claims.names 1 }}
+        - name: docker-cache-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.dind_image.volumeClaimName }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
