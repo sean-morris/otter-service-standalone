@@ -79,7 +79,7 @@ dind_image:
       ephemeral-storage: 1Gi
       memory: 10Gi
   volumeClaimName: otter-docker-cache-claim
-  storageClassStorageReqest: 40Gi
+  storageClassStorageReqest: 80Gi
   volumeMounts:
     - name: opt-volume
       mountPath: /opt
