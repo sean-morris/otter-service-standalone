@@ -15,3 +15,5 @@ ingress:
   static_ip_name: "otter-stdalone-ip-prod"
 volume_claims:
   create: false
+nodeSelector:
+  cloud.google.com/gke-nodepool: oss-production
