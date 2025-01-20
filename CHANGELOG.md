@@ -1,4 +1,4 @@
-## 1.1.24
+## 1.1.25
 
 #### Enhancements made
 

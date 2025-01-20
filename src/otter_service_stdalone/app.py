@@ -209,8 +209,8 @@ class Download(BaseHandler):
                         zipF.write(f"{file_path}", f_path, compress_type=ZIP_DEFLATED)
                 read_me = os.path.join(os.path.dirname(__file__), "static_files", "README_DO_NOT_DISTRIBUTE.txt")
                 zipF.write(read_me, "README_DO_NOT_DISTRIBUTE.txt", compress_type=ZIP_DEFLATED)
-
-            download_label = f"{download_code.split('-')[0]}-results.zip"
+            
+            download_label = f"{'-'.join(download_code.split('-')[:-5])}-results.zip"
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
             m = f"attachment; filename={download_label}"
