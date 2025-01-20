@@ -150,3 +150,5 @@ certificate:
   name: le-crt
   secret: tls-secret
 
+nodeSelector: 
+  cloud.google.com/gke-nodepool: oss-staging-dev
