@@ -209,10 +209,11 @@ class Download(BaseHandler):
                         zipF.write(f"{file_path}", f_path, compress_type=ZIP_DEFLATED)
                 read_me = os.path.join(os.path.dirname(__file__), "static_files", "README_DO_NOT_DISTRIBUTE.txt")
                 zipF.write(read_me, "README_DO_NOT_DISTRIBUTE.txt", compress_type=ZIP_DEFLATED)
-
+            
+            download_label = f"{'-'.join(download_code.split('-')[:-5])}-results.zip"
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
-            m = f"attachment; filename=results-{download_code}.zip"
+            m = f"attachment; filename={download_label}"
             self.set_header('Content-Disposition', m)
             with open(f"{directory}/results.zip", 'rb') as f:
                 try:
@@ -251,9 +252,10 @@ class Upload(BaseHandler):
         results_path = str(uuid.uuid4())
         autograder = self.request.files['autograder'][0] if "autograder" in files else None
         notebooks = self.request.files['notebooks'][0] if "notebooks" in files else None
-        log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)    
         if autograder is not None and notebooks is not None:
+            log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
             notebooks_fname = notebooks['filename']
+            results_path = f"{os.path.splitext(notebooks_fname)[0]}-{results_path}"
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
             if notebooks_extn == ".zip":
                 notebooks_name = results_path + notebooks_extn
@@ -300,7 +302,7 @@ class Upload(BaseHandler):
                 except Exception as e:
                     log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
         else:
-            m = "Step 2b: Uploaded Files not given"
+            m = "Step 1: Uploaded Files not given"
             log.write_logs(results_path, m, "", "debug", log_debug)
             m = "It looks like you did not set the notebooks or autograder.zip or both!"
             self.render("index.html", message=m)
