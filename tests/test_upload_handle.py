@@ -48,13 +48,13 @@ def test_zip_with_zips_process_dir(resources):
 
 
 def test_handle_one_notebook(resources):
-    assert "files/lab04" in uh.handle_one_notebook("tests/files/lab04.ipynb")
+    assert "tests/files" in uh.handle_one_notebook("tests/files/hw3.ipynb")
 
 
 def test_handle_upload(resources):
     zip = "tests/files/hw3-submissions-only-notebooks.zip"
     mixed_zip = "tests/files/hw3-submissions-notebooks-zips-mixed.zip"
-    assert "files/lab04" in uh.handle_upload("tests/files/lab04.ipynb")
-    assert "files/hw3-submissions-only-notebooks" in uh.handle_upload(zip)
-    assert "files/hw3-submissions-only-notebooks" in uh.handle_upload(zip)
-    assert "files/hw3-submissions-notebooks-zips-mixed" in uh.handle_upload(mixed_zip)
+    assert "tests/files" in uh.handle_upload("tests/files/hw3.ipynb", "test-up-123")
+    assert "files/hw3-submissions-only-notebooks" in uh.handle_upload(zip, "test-up-123")
+    assert "files/hw3-submissions-only-notebooks" in uh.handle_upload(zip, "test-up-123")
+    assert "files/hw3-submissions-notebooks-zips-mixed" in uh.handle_upload(mixed_zip, "test-up-123")
