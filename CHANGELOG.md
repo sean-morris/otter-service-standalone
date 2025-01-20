@@ -1,3 +1,10 @@
+## 1.1.24
+
+#### Enhancements made
+
+* Increased(Doubled) Resources to Production Pod
+* Improved the name of the download code and downloaded file
+
 ## 1.1.23
 
 #### Enhancements made
