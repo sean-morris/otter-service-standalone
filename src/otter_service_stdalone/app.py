@@ -3,6 +3,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.auth
 import os
+import re
 import uuid
 import tornado.websocket
 from otter_service_stdalone import fs_logging as log
@@ -37,7 +38,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             if user_id not in session_callbacks:
                 session_callbacks[user_id] = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
                 session_callbacks[user_id].start()
-    
+
     def on_message(self, message):
         pass  # No action needed on incoming message
 
@@ -255,7 +256,8 @@ class Upload(BaseHandler):
         if autograder is not None and notebooks is not None:
             log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
             notebooks_fname = notebooks['filename']
-            results_path = f"{os.path.splitext(notebooks_fname)[0]}-{results_path}"
+            sanitized_filename = re.sub(r"[ ,./\\\[\]{}()]", "", os.path.splitext(notebooks_fname)[0])
+            results_path = f"{sanitized_filename}-{results_path}"
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
             if notebooks_extn == ".zip":
                 notebooks_name = results_path + notebooks_extn
