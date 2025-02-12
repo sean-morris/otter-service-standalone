@@ -1,3 +1,10 @@
+## 1.1.26
+
+#### Enhancements made
+
+* Removed Problematic Characters from Download Code
+* Fixed Version Checking to be anything over 6.0.4
+
 ## 1.1.25
 
 #### Enhancements made
