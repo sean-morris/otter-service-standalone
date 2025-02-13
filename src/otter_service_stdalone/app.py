@@ -3,6 +3,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.auth
 import os
+import re
 import uuid
 import tornado.websocket
 from otter_service_stdalone import fs_logging as log
@@ -37,7 +38,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             if user_id not in session_callbacks:
                 session_callbacks[user_id] = tornado.ioloop.PeriodicCallback(lambda: self.send_results(user_id), 1000)
                 session_callbacks[user_id].start()
-    
+
     def on_message(self, message):
         pass  # No action needed on incoming message
 
@@ -255,7 +256,8 @@ class Upload(BaseHandler):
         if autograder is not None and notebooks is not None:
             log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
             notebooks_fname = notebooks['filename']
-            results_path = f"{os.path.splitext(notebooks_fname)[0]}-{results_path}"
+            sanitized_filename = re.sub(r"[ ,./\\\[\]{}()]", "", os.path.splitext(notebooks_fname)[0])
+            results_path = f"{sanitized_filename}-{results_path}"
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
             if notebooks_extn == ".zip":
                 notebooks_name = results_path + notebooks_extn
@@ -279,12 +281,14 @@ class Upload(BaseHandler):
             m = "Step 3A: Uploaded autograder.zip files written to disk - now checking otter version"
             log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
             if not otter_version_correct(auto_p):
-                m = "Step 3A-1: autograder.zip is wrong version of otter-grader; must be >= 6.0.4"
+                m = "Step 3A-1: autograder.zip is made with the wrong version of otter-grader; must be >="
+                m += os.environ.get("TARGET_OTTER_VERSION")
                 log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
                 m = "If you are teaching Data 8, please get the latest autograder.zips from materials-sp22-private. "
                 m += "If you are NOT teaching Berkeley's Data 8, you need to make sure the autograder.zip uses "
-                m += "otter-grader version >=6.0.4; due to breaking changes in "
-                m += "otter-grader dependencies you need to run otter assign with otter-grader >= 6.0.4 to generate working "
+                m += f"otter-grader version >={os.environ.get('TARGET_OTTER_VERSION')}; due to breaking changes in "
+                m += "otter-grader dependencies you need to run otter assign with "
+                m += f"otter-grader >={os.environ.get('TARGET_OTTER_VERSION')} to generate working "
                 m += "solution files(autograder.zips)."
                 self.render("index.html", message=m)
             else:

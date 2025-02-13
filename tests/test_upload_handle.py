@@ -51,6 +51,10 @@ def test_handle_one_notebook(resources):
     assert "tests/files" in uh.handle_one_notebook("tests/files/hw3.ipynb")
 
 
+def test_period_in_notebook_name(resources):
+    assert "tests/files" in uh.handle_upload("tests/files/hw3.3.ipynb", "test-up-123")
+
+
 def test_handle_upload(resources):
     zip = "tests/files/hw3-submissions-only-notebooks.zip"
     mixed_zip = "tests/files/hw3-submissions-notebooks-zips-mixed.zip"

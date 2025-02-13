@@ -1,5 +1,7 @@
 import re
 import zipfile
+from packaging import version
+import os
 
 
 def is_version_6_or_greater(zip_ref, target_file, reg):
@@ -8,10 +10,13 @@ def is_version_6_or_greater(zip_ref, target_file, reg):
             content = file.read().decode('utf-8')
             match = reg.search(content)
             if match:
-                version = match.group(2)
-                version_nums = version.split(".")
-                if len(version_nums) >= 3 and int(version_nums[0]) >= 6 and int(version_nums[2]) >= 4:
-                    return True
+                version_str = match.group(2)
+                try:
+                    current_ver = version.parse(version_str)
+                    target_ver = version.parse(os.environ.get("TARGET_OTTER_VERSION"))
+                    return current_ver >= target_ver
+                except Exception:
+                    pass
     return False
 
 
