@@ -9,3 +9,4 @@ data:
   GRADER_DNS: {{ .Values.otter_env.parameters.grader_dns }}
   AUTH_ORG: {{ .Values.otter_env.parameters.auth_org }}
   SUPPORT_EMAIL: {{ .Values.otter_env.parameters.support_email }}
+  TARGET_OTTER_VERSION: "{{ .Values.otter_env.parameters.target_otter_version }}"
