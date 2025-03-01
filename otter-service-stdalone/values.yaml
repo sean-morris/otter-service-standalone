@@ -78,8 +78,8 @@ dind_image:
       cpu: 2000m
       ephemeral-storage: 1Gi
       memory: 10Gi
-  volumeClaimName: otter-docker-cache-claim
-  storageClassStorageReqest: 80Gi
+  volumeClaimName: otter-docker-cache-claim-v2
+  storageClassStorageReqest: 120Gi
   volume_claim:
     create: true
   volumeMounts:
