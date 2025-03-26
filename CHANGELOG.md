@@ -1,3 +1,9 @@
+## 1.1.28
+
+#### Enhancements made
+
+* Removed More Problematic Characters from Download Code
+
 ## 1.1.27
 
 #### Enhancements made
