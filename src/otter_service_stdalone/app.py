@@ -256,7 +256,7 @@ class Upload(BaseHandler):
         if autograder is not None and notebooks is not None:
             log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
             notebooks_fname = notebooks['filename']
-            sanitized_filename = re.sub(r"[ ,./\\\[\]{}()]", "", os.path.splitext(notebooks_fname)[0])
+            sanitized_filename = re.sub(r"[ ,_./\\\[\]{}()]", "", os.path.splitext(notebooks_fname)[0])
             results_path = f"{sanitized_filename}-{results_path}"
             notebooks_extn = os.path.splitext(notebooks_fname)[1]
             if notebooks_extn == ".zip":
