@@ -8,8 +8,8 @@ metadata:
     cert-manager.io/issue-temporary-certificate: "true"
     acme.cert-manager.io/http01-edit-in-place: "true"
     networking.gke.io/v1beta1.FrontendConfig: ssl-redirect
+    kubernetes.io/ingress.class: "gce"
 spec:
-  ingressClassName: gce
   tls:
     - secretName: {{ .Values.certificate.secret }}
       hosts:
