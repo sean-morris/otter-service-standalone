@@ -284,7 +284,7 @@ class Upload(BaseHandler):
                 m = "Step 3A-1: autograder.zip is made with the wrong version of otter-grader; must be >="
                 m += os.environ.get("TARGET_OTTER_VERSION")
                 log.write_logs(results_path, m, f"Results Code: {results_path}", "debug", log_debug)
-                m = "If you are teaching Data 8, please get the latest autograder.zips from materials-sp22-private. "
+                m = "If you are teaching Data 8, please get the latest autograder.zips from materials-fds-private. "
                 m += "If you are NOT teaching Berkeley's Data 8, you need to make sure the autograder.zip uses "
                 m += f"otter-grader version >={os.environ.get('TARGET_OTTER_VERSION')}; due to breaking changes in "
                 m += "otter-grader dependencies you need to run otter assign with "
