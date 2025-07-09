@@ -64,7 +64,7 @@ otter_srv_stdalone:
 dind_image:
   name: otter-dind
   repository: docker
-  tag: 20-dind
+  tag: 24-dind
   args: ["--tls=false"]
   imagePullPolicy: Always
   securityContext: 
