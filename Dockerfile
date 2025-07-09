@@ -29,7 +29,7 @@ ADD ./requirements/prod.txt /etc/otter-service-stdalone/requirements.txt
 RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
 
 # install docker cli
-ENV DOCKER_VERSION=5:20.10.17~3-0~ubuntu-jammy
+ENV DOCKER_VERSION=5:24.0.9-1~ubuntu.22.04~jammy
 RUN apt-get update
 RUN apt-get install -y \
     ca-certificates \
@@ -42,7 +42,7 @@ RUN echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 RUN apt-get update
-RUN apt-get -y install docker-ce-cli=${DOCKER_VERSION}
+RUN apt-get -y install docker-ce-cli=${DOCKER_VERSION} docker-buildx-plugin
 RUN apt-get -y install unzip
 
 WORKDIR /opt
