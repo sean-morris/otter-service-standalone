@@ -103,7 +103,7 @@ storageClass:
   create: true
   name: otter-storage-class
   accessModes: ReadWriteOnce
-  storageRequest: 1Gi
+  storageRequest: 3Gi
   type: pd-standard
 
 volume_claims:
