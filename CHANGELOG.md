@@ -1,3 +1,10 @@
+## 1.1.30
+
+#### Enhancements made
+
+* Handles random special characters in notebook names
+* Handles hidden folders in notebook submission zip
+
 ## 1.1.29
 
 #### Enhancements made
