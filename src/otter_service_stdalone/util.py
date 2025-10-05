@@ -49,7 +49,7 @@ def sanitize_filename(filename: str) -> str:
     # Split name and extension
     name, ext = os.path.splitext(filename)
     # Remove periods and commas from the name part
-    clean_name = name.replace('.', '').replace(',', '')
+    clean_name = name.replace('.', '').replace(',', '').replace(' ', '')
     return f"{clean_name}{ext}"
 
 
@@ -62,7 +62,6 @@ def clean_directory(path: str):
         for dir_name in list(dirs):
             if dir_name.startswith('.') or dir_name == '__MACOSX':
                 dir_path = os.path.join(root, dir_name)
-                print(f"Deleting folder: {dir_path}")
                 shutil.rmtree(dir_path)
                 dirs.remove(dir_name)  # remove from list to avoid walking it
 
@@ -72,5 +71,4 @@ def clean_directory(path: str):
             new_name = sanitize_filename(file_name)
             new_path = os.path.join(root, new_name)
             if old_path != new_path:
-                print(f"Renaming {old_path} -> {new_path}")
                 os.rename(old_path, new_path)

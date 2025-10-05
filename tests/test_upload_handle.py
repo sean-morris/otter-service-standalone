@@ -11,6 +11,7 @@ def resources():
     l4 = "tests/files/lab04/lab04.ipynb"
     n1 = "tests/files/hw3-submissions-only-notebooks"
     n2 = "tests/files/hw3-submissions-notebooks-zips-mixed"
+    n3 = "tests/files/clean_up"
     shutil.copy("tests/files/student_1.zip", "/".join(s1.split("/")[:-1]))
     shutil.copy("tests/files/student_4.zip", "/".join(s4.split("/")[:-1]))
     yield "resources"
@@ -25,6 +26,8 @@ def resources():
         shutil.rmtree(n1)
     if os.path.exists(n2):
         shutil.rmtree(n2)
+    if os.path.exists(n3):
+        shutil.rmtree(n3)
 
 
 def test_one_notebook(resources):
@@ -58,7 +61,9 @@ def test_period_in_notebook_name(resources):
 def test_handle_upload(resources):
     zip = "tests/files/hw3-submissions-only-notebooks.zip"
     mixed_zip = "tests/files/hw3-submissions-notebooks-zips-mixed.zip"
+    clean = "tests/files/clean_up.zip"
     assert "tests/files" in uh.handle_upload("tests/files/hw3.ipynb", "test-up-123")
     assert "files/hw3-submissions-only-notebooks" in uh.handle_upload(zip, "test-up-123")
     assert "files/hw3-submissions-only-notebooks" in uh.handle_upload(zip, "test-up-123")
     assert "files/hw3-submissions-notebooks-zips-mixed" in uh.handle_upload(mixed_zip, "test-up-123")
+    assert "files/clean_up" in uh.handle_upload(clean, "test-up-123")
