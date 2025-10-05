@@ -2,6 +2,7 @@ import re
 import zipfile
 from packaging import version
 import os
+import shutil
 
 
 def is_version_6_or_greater(zip_ref, target_file, reg):
@@ -39,3 +40,37 @@ def otter_version_correct(autograder_path):
         otter_in_req = is_version_6_or_greater(zip_ref, req_target_file, requirements_regex)
         otter_in_env = is_version_6_or_greater(zip_ref, env_target_file, environment_regex)
         return otter_in_req or otter_in_env
+
+
+def sanitize_filename(filename: str) -> str:
+    """
+    Remove periods and commas from filename except the extension dot.
+    """
+    # Split name and extension
+    name, ext = os.path.splitext(filename)
+    # Remove periods and commas from the name part
+    clean_name = name.replace('.', '').replace(',', '')
+    return f"{clean_name}{ext}"
+
+
+def clean_directory(path: str):
+    """
+    Delete hidden folders like __MACOSX and sanitize all file names in the directory tree.
+    """
+    for root, dirs, files in os.walk(path, topdown=True):
+        # Remove hidden/system folders
+        for dir_name in list(dirs):
+            if dir_name.startswith('.') or dir_name == '__MACOSX':
+                dir_path = os.path.join(root, dir_name)
+                print(f"Deleting folder: {dir_path}")
+                shutil.rmtree(dir_path)
+                dirs.remove(dir_name)  # remove from list to avoid walking it
+
+        # Sanitize file names
+        for file_name in files:
+            old_path = os.path.join(root, file_name)
+            new_name = sanitize_filename(file_name)
+            new_path = os.path.join(root, new_name)
+            if old_path != new_path:
+                print(f"Renaming {old_path} -> {new_path}")
+                os.rename(old_path, new_path)

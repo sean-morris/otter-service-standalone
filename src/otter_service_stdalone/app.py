@@ -12,7 +12,7 @@ from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
 from multiprocessing import Queue
 
-from .util import otter_version_correct
+from .util import otter_version_correct, clean_directory
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -181,7 +181,7 @@ class Download(BaseHandler):
             m = "Download: Code Not Given!"
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
             msg = "Please enter the download code to see your result."
-            self.render("index.html",  download_message=msg)
+            self.render("index.html", download_message=msg)
         elif not os.path.exists(f"{directory}"):
             m = "Download: Directory for Code Not existing"
             log.write_logs(download_code, m, f"{download_code}", "debug", log_debug)
@@ -210,7 +210,7 @@ class Download(BaseHandler):
                         zipF.write(f"{file_path}", f_path, compress_type=ZIP_DEFLATED)
                 read_me = os.path.join(os.path.dirname(__file__), "static_files", "README_DO_NOT_DISTRIBUTE.txt")
                 zipF.write(read_me, "README_DO_NOT_DISTRIBUTE.txt", compress_type=ZIP_DEFLATED)
-            
+
             download_label = f"{'-'.join(download_code.split('-')[:-5])}-results.zip"
             self.set_header('Content-Type', 'application/octet-stream')
             self.set_header("Content-Description", "File Transfer")
@@ -272,7 +272,7 @@ class Upload(BaseHandler):
             if not os.path.exists(__UPLOADS__):
                 os.mkdir(__UPLOADS__)
             auto_p = f"{__UPLOADS__}/{autograder_name}"
-            
+
             notebooks_path = f"{__UPLOADS__}/{notebooks_name}"
             m = "Step 2a: Uploaded File Names Determined"
             log.write_logs(results_path, m, f"notebooks path: {notebooks_path}", "debug", log_debug)
@@ -302,6 +302,9 @@ class Upload(BaseHandler):
                 try:
                     session_queues[user_id][results_path] = Queue()
                     session_messages[user_id][results_path] = []
+
+                    # remove special characters from notebooks and remove hidden folders
+                    clean_directory(notebooks_path)
                     await g.grade(auto_p, notebooks_path, autograder_orig_name, results_path, session_queues[user_id].get(results_path))
                 except Exception as e:
                     log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
@@ -346,16 +349,16 @@ settings = {
 }
 
 application = tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/login", LoginHandler),
-        (r"/upload", Upload),
-        (r"/download", Download),
-        (r"/update", WebSocketHandler),
-        (r"/remove/([a-zA-Z0-9\-]+)", RemoveProgressHandler),
-        (r"/oauth_callback", GitHubOAuthHandler),
-        (r"/otterhealth", HealthHandler),
-        (r"/scripts/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(os.path.dirname(__file__), "scripts")}),
-        ], **settings, debug=False)
+    (r"/", MainHandler),
+    (r"/login", LoginHandler),
+    (r"/upload", Upload),
+    (r"/download", Download),
+    (r"/update", WebSocketHandler),
+    (r"/remove/([a-zA-Z0-9\-]+)", RemoveProgressHandler),
+    (r"/oauth_callback", GitHubOAuthHandler),
+    (r"/otterhealth", HealthHandler),
+    (r"/scripts/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(os.path.dirname(__file__), "scripts")}),
+], **settings, debug=False)
 
 
 def main():
