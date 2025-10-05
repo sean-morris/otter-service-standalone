@@ -11,3 +11,7 @@ file
 firestore-debug.log
 ui-debug.log
 old-requirements.txt
+copy-pod.yaml
+.gitignore
+pvc-temp.yaml
+cronjob.yaml
