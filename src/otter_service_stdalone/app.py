@@ -12,7 +12,7 @@ from otter_service_stdalone import grade_notebooks
 from zipfile import ZipFile, ZIP_DEFLATED
 from multiprocessing import Queue
 
-from .util import otter_version_correct, clean_directory
+from .util import otter_version_correct
 
 
 __UPLOADS__ = "/tmp/uploads"
@@ -303,8 +303,6 @@ class Upload(BaseHandler):
                     session_queues[user_id][results_path] = Queue()
                     session_messages[user_id][results_path] = []
 
-                    # remove special characters from notebooks and remove hidden folders
-                    clean_directory(notebooks_path)
                     await g.grade(auto_p, notebooks_path, autograder_orig_name, results_path, session_queues[user_id].get(results_path))
                 except Exception as e:
                     log.write_logs(results_path, "Grading Problem", str(e), "error", log_error)
