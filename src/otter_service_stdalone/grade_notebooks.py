@@ -43,6 +43,7 @@ class GradeNotebooks():
         """
         try:
             notebook_folder = uh.handle_upload(notebooks_path, results_id)
+
             notebook_count = self.count_ipynb_files(notebook_folder, ".ipynb")
             log.write_logs(results_id, f"{notebook_count}",
                            "",

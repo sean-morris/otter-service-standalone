@@ -2,6 +2,7 @@ import os
 import shutil
 from zipfile import ZipFile
 from otter_service_stdalone import fs_logging as log
+from .util import clean_directory
 
 
 def handle_one_notebook(path):
@@ -119,7 +120,8 @@ def handle_upload(path, results_id):
                 zip_folder = path.split(".")[0]
                 with ZipFile(path, 'r') as zObject:
                     zObject.extractall(path=zip_folder)
-
+                # remove special characters from notebooks and remove hidden folders
+                clean_directory(zip_folder)
                 log.write_logs(results_id, "Step 4a: Configure Notebooks Folder for Otter Grader",
                                "Zipped file of notebooks Uploaded",
                                "debug",
