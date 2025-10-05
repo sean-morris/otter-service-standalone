@@ -6,7 +6,6 @@ from otter.grade import main as grade
 from otter import logging as loggers
 from multiprocessing import Process
 from tornado.ioloop import PeriodicCallback
-from .util import clean_directory
 
 log_debug = f'{os.environ.get("ENVIRONMENT")}-debug'
 log_count = f'{os.environ.get("ENVIRONMENT")}-count'
@@ -44,9 +43,6 @@ class GradeNotebooks():
         """
         try:
             notebook_folder = uh.handle_upload(notebooks_path, results_id)
-
-            # remove special characters from notebooks and remove hidden folders
-            clean_directory(notebook_folder)
 
             notebook_count = self.count_ipynb_files(notebook_folder, ".ipynb")
             log.write_logs(results_id, f"{notebook_count}",
