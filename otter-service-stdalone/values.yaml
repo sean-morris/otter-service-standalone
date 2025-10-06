@@ -109,7 +109,7 @@ storageClass:
 volume_claims:
   names:
     - otter-opt-volume-claim
-    - otter-tmp-volume-claim
+    - otter-tmp-volume-claim-v2
 
 otter_env:
   name: otter-env
