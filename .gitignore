@@ -16,3 +16,4 @@ copy-pod.yaml
 pvc-temp.yaml
 cronjob.yaml
 .dev-env
+pvc-check.yml
