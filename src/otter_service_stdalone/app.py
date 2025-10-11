@@ -266,7 +266,7 @@ class Upload(BaseHandler):
                 os.mkdir(f"{__UPLOADS__}/{results_path}")
             autograder_fname = autograder['filename']
             arr_autograder_fname = os.path.splitext(autograder_fname)
-            autograder_orig_name = arr_autograder_fname[0]
+            autograder_orig_name = re.sub(r"[ ,_./\\\[\]{}()]", "", arr_autograder_fname[0])
             autograder_extn = arr_autograder_fname[1]
             autograder_name = str(uuid.uuid4()) + autograder_extn
             if not os.path.exists(__UPLOADS__):
