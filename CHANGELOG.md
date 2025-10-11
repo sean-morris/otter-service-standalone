@@ -1,3 +1,9 @@
+## 1.1.35
+
+#### Enhancements made
+
+* Fixed autograder file names to deal with weird characters
+
 ## 1.1.33
 
 #### Enhancements made
