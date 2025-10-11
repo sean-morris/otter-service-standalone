@@ -10,10 +10,5 @@ deployment/cloud/deploy-remove.sh
 file
 firestore-debug.log
 ui-debug.log
-old-requirements.txt
-copy-pod.yaml
-.gitignore
-pvc-temp.yaml
-cronjob.yaml
 .dev-env
 pvc-check.yml
