@@ -1,9 +1,12 @@
-## 1.1.31
+## 1.1.33
 
 #### Enhancements made
 
 * Handles random special characters in notebook names
 * Handles hidden folders in notebook submission zip
+* PVC for docker images: 500 GB
+* Volume for Uploads: 5 GB
+
 
 ## 1.1.29
 
