@@ -9,10 +9,12 @@ def test_autograder_zip_version():
     a2 = "tests/files/hw02-autograder_6_1_0.zip"
     a3 = "tests/files/hw02-autograder_5_5_0.zip"
     a4 = "tests/files/hw03-autograder_6_1_3.zip"
+    a5 = "tests/files/hw03-autograder_no_version.zip"
     assert util.otter_version_correct(a1) is False
     assert util.otter_version_correct(a2) is False
     assert util.otter_version_correct(a3) is False
-    assert util.otter_version_correct(a4) is False
+    assert util.otter_version_correct(a4)
+    assert util.otter_version_correct(a5)
 
 
 def test_clean_directory():

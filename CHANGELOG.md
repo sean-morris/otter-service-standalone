@@ -1,3 +1,9 @@
+## 1.1.36
+
+#### Enhancements made
+
+* Allow no otter-grader version specified in autograder.zip
+
 ## 1.1.35
 
 #### Enhancements made

@@ -18,6 +18,8 @@ def is_version_6_or_greater(zip_ref, target_file, reg):
                     return current_ver >= target_ver
                 except Exception:
                     pass
+            else:
+                return True
     return False
 
 
