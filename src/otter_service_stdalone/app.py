@@ -255,6 +255,8 @@ class Upload(BaseHandler):
         notebooks = self.request.files['notebooks'][0] if "notebooks" in files else None
         if autograder is not None and notebooks is not None:
             log.write_logs(results_path, "Step 1: Upload accepted", "", "debug", log_debug)
+            # Ensure the shared upload root exists before creating request-specific paths.
+            os.makedirs(__UPLOADS__, exist_ok=True)
             notebooks_fname = notebooks['filename']
             sanitized_filename = re.sub(r"[ ,_./\\\[\]{}()]", "", os.path.splitext(notebooks_fname)[0])
             results_path = f"{sanitized_filename}-{results_path}"
@@ -263,14 +265,12 @@ class Upload(BaseHandler):
                 notebooks_name = results_path + notebooks_extn
             else:
                 notebooks_name = f"{results_path}/{notebooks_fname}"
-                os.mkdir(f"{__UPLOADS__}/{results_path}")
+                os.makedirs(f"{__UPLOADS__}/{results_path}", exist_ok=True)
             autograder_fname = autograder['filename']
             arr_autograder_fname = os.path.splitext(autograder_fname)
             autograder_orig_name = re.sub(r"[ ,_./\\\[\]{}()]", "", arr_autograder_fname[0])
             autograder_extn = arr_autograder_fname[1]
             autograder_name = str(uuid.uuid4()) + autograder_extn
-            if not os.path.exists(__UPLOADS__):
-                os.mkdir(__UPLOADS__)
             auto_p = f"{__UPLOADS__}/{autograder_name}"
 
             notebooks_path = f"{__UPLOADS__}/{notebooks_name}"
