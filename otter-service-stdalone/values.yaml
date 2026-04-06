@@ -140,14 +140,22 @@ autoscaling:
 
 ingress:
   name: otter-stdalone-ingress 
+  frontendConfigName: ssl-redirect
 
 issuer:
+  create: true
+  kind: Issuer
+  name: letsencrypt
   acme_server: https://acme-v02.api.letsencrypt.org/directory
   acme_email: datahub-support@berkeley.edu
-  acme_name: letsencrypt
   acme_kind: letsencrypt-http
 
+frontendConfig:
+  create: true
+  name: ssl-redirect
+
 certificate:
+  create: true
   name: le-crt
   secret: tls-secret
 

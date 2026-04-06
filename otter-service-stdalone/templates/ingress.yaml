@@ -3,11 +3,21 @@ kind: Ingress
 metadata:
   name: {{ .Values.ingress.name }}
   annotations:
+    {{- if .Values.ingress.static_ip_name }}
     kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.static_ip_name }}
-    cert-manager.io/issuer: {{ .Values.issuer.acme_name }}
+    {{- end }}
+    {{- if .Values.certificate.create }}
+    {{- if eq .Values.issuer.kind "ClusterIssuer" }}
+    cert-manager.io/cluster-issuer: {{ .Values.issuer.name }}
+    {{- else }}
+    cert-manager.io/issuer: {{ .Values.issuer.name }}
+    {{- end }}
     cert-manager.io/issue-temporary-certificate: "true"
     acme.cert-manager.io/http01-edit-in-place: "true"
-    networking.gke.io/v1beta1.FrontendConfig: ssl-redirect
+    {{- end }}
+    {{- if and .Values.frontendConfig.create .Values.frontendConfig.name }}
+    networking.gke.io/v1beta1.FrontendConfig: {{ .Values.frontendConfig.name }}
+    {{- end }}
     kubernetes.io/ingress.class: "gce"
 spec:
   tls:
