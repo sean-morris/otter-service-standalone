@@ -7,8 +7,6 @@ This document contains internal migration and cutover steps that are not needed 
 - Access to source and target Kubernetes contexts.
 - Access to target cloud project IAM, KMS, Firestore, and GKE resources.
 - Helm and kubectl configured locally.
-- `sops`, `docker`, `gcloud`, and `ripgrep` (`rg`) installed locally.
-- A working Python runtime for `gcloud`. On macOS, `export CLOUDSDK_PYTHON="$(which python3)"` was needed when the bundled wrapper picked an unsupported Python.
 
 ## Migration Checklist (Before First Target Deploy)
 
@@ -115,118 +113,11 @@ This document contains internal migration and cutover steps that are not needed 
 
 	`helm template otter-srv otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.prod.yaml --values otter-service-stdalone/values.cb-prod.yaml >/tmp/otter-render-cb.yaml`
 
-	For the cb migration, we also had to override storage behavior in `otter-service-stdalone/values.cb-prod.yaml`:
-
-	- `storageClass.create: false`
-	- `storageClass.name: standard-rwo`
-	- `volume_claims.create: true`
-
 11. Keep current deployment untouched until target is healthy.
 
 	If temporary old-key decrypt access was granted, remove after target is healthy on new key:
 
 	`gcloud kms keys remove-iam-policy-binding otter-service --project=data8x-scratch --location=global --keyring=data8x-sops --member="serviceAccount:otter-stdalone-sa@cb-1003-1696.iam.gserviceaccount.com" --role="roles/cloudkms.cryptoKeyDecrypter"`
-
-## Build And Release Notes
-
-The main app image is built from the published Python package, not directly from the working tree. After changing packaged files such as `src/otter_service_stdalone/secrets/*.yaml` or `src/otter_service_stdalone/app.py`, you must build/publish a new version and deploy that new tag.
-
-Recommended release flow used for this migration:
-
-1. Switch to `dev`.
-2. Bump version in `src/otter_service_stdalone/__init__.py`.
-3. Run:
-
-	`./deploy.sh build`
-
-	This performs the standard package build, Twine upload, and both Docker image builds/pushes.
-
-4. Switch back to `prod`.
-5. Deploy the new version to the target cluster:
-
-	`./deploy.sh --context gke_cb-1003-1696_us-central1-b_cb-cluster --values-file otter-service-stdalone/values.cb-prod.yaml`
-
-6. Verify the deployment is using the expected image tags:
-
-	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod get deploy otter-pod -o jsonpath='{.spec.template.spec.containers[*].image}{"\\n"}'`
-
-If the app pod reports `ErrImagePull` for a new version while the cron image exists, the main app image tag did not reach the registry. Build/push the missing main image tag and redeploy.
-
-## Ingress And Pre-Cutover Testing
-
-We validated the target deployment in three stages.
-
-### 1. Service IP Testing
-
-Before ingress was ready, the app was reachable directly through the service load balancer IP:
-
-	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod get svc otter-pod -o wide`
-
-Use the service `EXTERNAL-IP` to test `/` and `/otterhealth`.
-
-Note: OAuth cannot be fully validated against the raw IP because the app builds callback URLs from `GRADER_DNS`, so GitHub redirects back to the DNS hostname.
-
-### 2. Ingress Provisioning
-
-If ingress is created but shows no `ADDRESS` for an extended period:
-
-1. Confirm GKE HTTP load balancing is enabled:
-
-	`gcloud container clusters describe cb-cluster --project=cb-1003-1696 --zone=us-central1-b --format="value(addonsConfig.httpLoadBalancing.disabled)"`
-
-2. If needed, enable it:
-
-	`gcloud container clusters update cb-cluster --project=cb-1003-1696 --zone=us-central1-b --update-addons=HttpLoadBalancing=ENABLED`
-
-3. Recreate ingress and redeploy once after addon reconciliation:
-
-	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod delete ingress otter-stdalone-ingress`
-
-	`./deploy.sh --context gke_cb-1003-1696_us-central1-b_cb-cluster --values-file otter-service-stdalone/values.cb-prod.yaml`
-
-4. Watch until ingress gets the reserved address:
-
-	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod get ingress otter-stdalone-ingress -w`
-
-For the cb migration, ingress eventually attached the reserved static IP `34.117.205.145`.
-
-### 3. Local Hosts-File Testing
-
-Once ingress has the expected external address, you can validate the real hostname and OAuth flow locally before public DNS cutover.
-
-1. Add a temporary hosts override:
-
-	`sudo sh -c 'grep -v "grader.datahub.berkeley.edu" /etc/hosts > /tmp/hosts.tmp && echo "34.117.205.145 grader.datahub.berkeley.edu" >> /tmp/hosts.tmp && cat /tmp/hosts.tmp > /etc/hosts'`
-
-2. Flush macOS caches:
-
-	`sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`
-
-3. Verify local resolution:
-
-	`dscacheutil -q host -a name grader.datahub.berkeley.edu`
-
-4. Test `https://grader.datahub.berkeley.edu` in the browser, including OAuth login and upload flow.
-
-5. Remove the temporary override after testing:
-
-	`sudo sed -i '' '/grader.datahub.berkeley.edu/d' /etc/hosts`
-
-	`sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`
-
-## Runtime Issues Observed During CB Migration
-
-### Firestore Missing
-
-If startup fails with a Firestore `404 The database (default) does not exist` error, create the default Firestore database in the target project before retrying.
-
-### Upload Directory Failure
-
-The cb migration exposed an upload bug where non-zip notebook uploads could fail with:
-
-	`FileNotFoundError: [Errno 2] No such file or directory: '/tmp/uploads/<results_path>'`
-
-The fix was to ensure `/tmp/uploads` exists before creating request-specific subdirectories. Deploy a version that includes that fix before validating upload behavior.
 
 ## Recommended Zero-Downtime Order
 
@@ -254,8 +145,6 @@ The fix was to ensure `/tmp/uploads` exists before creating request-specific sub
 5. Test target directly before cutover.
 
 	Use service IP, ingress IP, or port-forwarding as appropriate.
-
-	If testing via the real hostname before DNS cutover, use the temporary hosts-file override procedure above.
 
 6. Confirm ingress address matches reserved static IP before DNS changes.
 
