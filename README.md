@@ -121,9 +121,33 @@ Review and complete this checklist before the first `deploy.sh` run against the 
 
 	`serviceAccount.annotations.iam.gke.io/gcp-service-account: otter-stdalone-sa@cb-1003-1696.iam.gserviceaccount.com`
 
+	Grant decrypt on the new target-project KMS key used by SOPS:
+
+	`gcloud kms keys add-iam-policy-binding otter-service --project=cb-1003-1696 --location=global --keyring=cb-sops --member="serviceAccount:$GSA_EMAIL" --role="roles/cloudkms.cryptoKeyDecrypter"`
+
 	If you leave `serviceAccount.annotations` empty, that is only correct if the target cluster already provides another working credential path.
 
-8. Create the default Firestore database in the target project if it does not already exist.
+8. Create a target-project KMS key for long-term SOPS use, then re-encrypt app secret files to that key.
+
+	Create keyring/key (safe to rerun):
+
+	`PROJECT_ID=cb-1003-1696`
+	`KMS_LOCATION=global`
+	`KMS_KEYRING=cb-sops`
+	`KMS_KEY=otter-service`
+	`NEW_KMS="projects/$PROJECT_ID/locations/$KMS_LOCATION/keyRings/$KMS_KEYRING/cryptoKeys/$KMS_KEY"`
+
+	`gcloud kms keyrings describe "$KMS_KEYRING" --project="$PROJECT_ID" --location="$KMS_LOCATION" >/dev/null 2>&1 || gcloud kms keyrings create "$KMS_KEYRING" --project="$PROJECT_ID" --location="$KMS_LOCATION"`
+
+	`gcloud kms keys describe "$KMS_KEY" --project="$PROJECT_ID" --location="$KMS_LOCATION" --keyring="$KMS_KEYRING" >/dev/null 2>&1 || gcloud kms keys create "$KMS_KEY" --project="$PROJECT_ID" --location="$KMS_LOCATION" --keyring="$KMS_KEYRING" --purpose=encryption`
+
+	Re-encrypt the packaged SOPS files to the new key:
+
+	`for f in src/otter_service_stdalone/secrets/gh_key.dev.yaml src/otter_service_stdalone/secrets/gh_key.local.yaml src/otter_service_stdalone/secrets/gh_key.prod.yaml src/otter_service_stdalone/secrets/gh_key.staging.yaml; do tmp="$(mktemp)"; sops -d "$f" | sops --encrypt --input-type yaml --output-type yaml --gcp-kms "$NEW_KMS" /dev/stdin > "$tmp" && mv "$tmp" "$f"; done`
+
+	Because these files are packaged into the runtime image, rebuild/push app images and redeploy after re-encryption so pods pick up the new key metadata.
+
+9. Create the default Firestore database in the target project if it does not already exist.
 
 	This service writes startup and runtime logs to Firestore, and the app will crash on boot if `(default)` is missing in the target project.
 
@@ -131,11 +155,15 @@ Review and complete this checklist before the first `deploy.sh` run against the 
 
 	`gcloud firestore databases create --project=cb-1003-1696 --location=us-west2 --type=firestore-native`
 
-9. Render the chart locally once with the target values to catch obvious configuration mistakes before the real deploy.
+10. Render the chart locally once with the target values to catch obvious configuration mistakes before the real deploy.
 
 	`helm template otter-srv otter-service-stdalone --values otter-service-stdalone/values.yaml --values otter-service-stdalone/values.prod.yaml --values otter-service-stdalone/values.cb-prod.yaml >/tmp/otter-render-cb.yaml`
 
-10. Keep the current deployment untouched until the new cluster is healthy and tested.
+11. Keep the current deployment untouched until the new cluster is healthy and tested.
+
+	If you temporarily granted decrypt access on the old source-project key to unblock startup, remove it after the target deployment is healthy on the new key:
+
+	`gcloud kms keys remove-iam-policy-binding otter-service --project=data8x-scratch --location=global --keyring=data8x-sops --member="serviceAccount:otter-stdalone-sa@cb-1003-1696.iam.gserviceaccount.com" --role="roles/cloudkms.cryptoKeyDecrypter"`
 
 Recommended order of operations for a zero-downtime migration:
 
@@ -143,9 +171,23 @@ Recommended order of operations for a zero-downtime migration:
 2. Deploy to the target cluster explicitly with the target context and override values:
 	`./deploy.sh --context gke_cb-1003-1696_us-central1-b_cb-cluster --values-file otter-service-stdalone/values.cb-prod.yaml`
 3. Verify the target deployment is healthy with `kubectl get pods,svc,ingress -n otter-stdalone-prod` on the target cluster.
+
+Post-deploy verification before cutover:
+
+1. Confirm the deployment is running the expected image tags/version:
+	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod get deploy otter-pod -o jsonpath='{.spec.template.spec.containers[*].image}{"\\n"}'`
+2. Confirm rollout and pod/container readiness:
+	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod rollout status deployment otter-pod --timeout=240s`
+	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod get pods`
+3. Confirm no active startup decrypt errors remain:
+	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod logs deployment/otter-pod -c otter-srv-stdalone --tail=80`
+	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod logs deployment/otter-pod -c otter-srv-stdalone --tail=200 | rg -i "Key not decrypted|sops|cloudkms|Firestore|Traceback"`
 4. Test the target deployment directly before cutover, using its service external IP, ingress IP, or port-forwarding.
-5. Only after validation, cut traffic over by changing DNS or whichever external routing points users to the current cluster.
-6. Leave the old cluster running until the new cluster has served production traffic successfully and rollback risk is acceptable.
+5. Confirm ingress has an address and that it matches the reserved static IP before DNS changes:
+	`kubectl --context gke_cb-1003-1696_us-central1-b_cb-cluster -n otter-stdalone-prod get ingress otter-stdalone-ingress`
+	`gcloud compute addresses describe otter-stdalone-prod-ip --project=cb-1003-1696 --global`
+6. Only after validation, cut traffic over by changing DNS or whichever external routing points users to the current cluster.
+7. Leave the old cluster running until the new cluster has served production traffic successfully and rollback risk is acceptable.
 
 Important: deploying the same app into the new cluster does not by itself take down the old deployment. The real cutover point is external traffic routing, typically DNS. As long as DNS still points to the current cluster, production traffic stays on the current deployment.
 
