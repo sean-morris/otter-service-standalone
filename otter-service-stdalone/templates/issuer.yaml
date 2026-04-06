@@ -1,14 +1,16 @@
+{{- if .Values.issuer.create }}
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: {{ .Values.issuer.kind }}
 metadata:
-  name: {{ .Values.issuer.acme_name }}
+  name: {{ .Values.issuer.name }}
 spec:
   acme:
     server: {{ .Values.issuer.acme_server }}
     email: {{ .Values.issuer.acme_email }}
     privateKeySecretRef:
-      name: {{ .Values.issuer.acme_name }}
+      name: {{ .Values.issuer.name }}
     solvers:
     - http01:
         ingress:
           name: {{ .Values.ingress.name }}
+{{- end }}

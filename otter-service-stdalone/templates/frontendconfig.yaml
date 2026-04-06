@@ -1,7 +1,9 @@
+{{- if .Values.frontendConfig.create }}
 apiVersion: networking.gke.io/v1beta1
 kind: FrontendConfig
 metadata:
-  name: ssl-redirect
+  name: {{ .Values.frontendConfig.name }}
 spec:
   redirectToHttps:
     enabled: true
+{{- end }}

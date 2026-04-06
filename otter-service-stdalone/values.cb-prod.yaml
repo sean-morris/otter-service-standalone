@@ -1,0 +1,53 @@
+# Overrides for deploying the standalone service into the cb cluster.
+# This keeps the existing prod app configuration but removes source-cluster-specific assumptions.
+
+branch: prod
+
+service:
+  load_balancer_ip: ""
+
+frontendConfig:
+  create: false
+
+issuer:
+  create: false
+  kind: ClusterIssuer
+  name: letsencrypt-prod
+
+certificate:
+  create: false
+  dns: grader.datahub.berkeley.edu
+
+ingress:
+  static_ip_name: "otter-stdalone-prod-ip"
+
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: otter-stdalone-sa@cb-1003-1696.iam.gserviceaccount.com
+
+storageClass:
+  create: false
+  name: standard-rwo
+
+otter_env:
+  parameters:
+    gcp_project_id: cb-1003-1696
+    environment: otter-stdalone-prod
+    grader_dns: https://grader.datahub.berkeley.edu
+
+dind_image:
+  resources:
+    limits:
+      cpu: 3500m
+      ephemeral-storage: 2Gi
+      memory: 20Gi
+    requests:
+      cpu: 3000m
+      ephemeral-storage: 2Gi
+      memory: 12Gi
+
+nodeSelector:
+  cloud.google.com/gke-nodepool: oss-production
+
+volume_claims:
+  create: true

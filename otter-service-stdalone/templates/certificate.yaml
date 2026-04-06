@@ -1,3 +1,4 @@
+{{- if .Values.certificate.create }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -5,8 +6,9 @@ metadata:
 spec:
   secretName: {{ .Values.certificate.secret }}
   issuerRef:
-    kind: Issuer
-    name: {{ .Values.issuer.acme_name }}
+    kind: {{ .Values.issuer.kind }}
+    name: {{ .Values.issuer.name }}
   commonName: {{ .Values.certificate.dns }}
   dnsNames:
     - {{ .Values.certificate.dns }}
+{{- end }}
