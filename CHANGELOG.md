@@ -1,3 +1,11 @@
+## 1.1.38
+
+#### Enhancements made
+
+* Deploys on any cluster now
+* Fixed upload directory does not exist issue
+* Seperated Migration Documentation from README
+
 ## 1.1.36
 
 #### Enhancements made
