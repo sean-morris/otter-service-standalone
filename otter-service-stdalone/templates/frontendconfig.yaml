@@ -3,6 +3,8 @@ apiVersion: networking.gke.io/v1beta1
 kind: FrontendConfig
 metadata:
   name: {{ .Values.frontendConfig.name }}
+  labels:
+    {{- include "otter-service-stdalone.labels" . | nindent 4 }}
 spec:
   redirectToHttps:
     enabled: true
