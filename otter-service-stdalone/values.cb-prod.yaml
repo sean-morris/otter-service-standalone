@@ -11,11 +11,11 @@ frontendConfig:
 
 issuer:
   create: false
-  kind: ClusterIssuer
-  name: letsencrypt-prod
+  kind: Issuer
+  name: letsencrypt
 
 certificate:
-  create: false
+  create: true
   dns: grader.datahub.berkeley.edu
 
 ingress:
