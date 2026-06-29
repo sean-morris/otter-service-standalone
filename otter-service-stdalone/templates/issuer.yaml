@@ -3,6 +3,8 @@ apiVersion: cert-manager.io/v1
 kind: {{ .Values.issuer.kind }}
 metadata:
   name: {{ .Values.issuer.name }}
+  labels:
+    {{- include "otter-service-stdalone.labels" . | nindent 4 }}
 spec:
   acme:
     server: {{ .Values.issuer.acme_server }}

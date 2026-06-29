@@ -21,7 +21,7 @@ spec:
       annotations:
         rollme: {{ randAlphaNum 5 | quote }}
       labels:
-        {{- include "otter-service-stdalone.selectorLabels" . | nindent 8 }}
+        {{- include "otter-service-stdalone.labels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
