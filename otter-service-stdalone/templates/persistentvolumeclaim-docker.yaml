@@ -6,6 +6,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ .Values.dind_image.volumeClaimName }}
+  labels:
+    {{- include "otter-service-stdalone.labels" . | nindent 4 }}
 spec:
   accessModes: 
     - {{ $accessMode }}

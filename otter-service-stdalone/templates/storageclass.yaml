@@ -2,6 +2,8 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: sc-{{ .Values.storageClass.name }}-{{ .Values.branch }}
+  labels:
+    {{- include "otter-service-stdalone.labels" . | nindent 4 }}
 reclaimPolicy: Retain
 provisioner: kubernetes.io/gce-pd
 parameters:
