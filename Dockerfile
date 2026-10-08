@@ -1,6 +1,6 @@
 ARG BUILD_VERSION
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG OTTER_SERVICE_STDALONE_VERSION
 
@@ -26,10 +26,10 @@ RUN echo 'export PATH=$PATH:/root/go/bin' >> /root/.bashrc && \
 
 RUN mkdir -p /etc/otter-service-stdalone
 ADD ./requirements/prod.txt /etc/otter-service-stdalone/requirements.txt
-RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install -r /etc/otter-service-stdalone/requirements.txt
+RUN --mount=type=cache,target=~/.cache/pip python3 -m pip install --break-system-packages -r /etc/otter-service-stdalone/requirements.txt
 
 # install docker cli
-ENV DOCKER_VERSION=5:24.0.9-1~ubuntu.22.04~jammy
+ENV DOCKER_VERSION=5:26.0.0-1~ubuntu.24.04~noble
 RUN apt-get update
 RUN apt-get install -y \
     ca-certificates \
@@ -53,10 +53,10 @@ EXPOSE 80
 
 FROM base AS image-local
 COPY ./dist/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz /opt/otter-service-stdalone/
-RUN python3 -m pip install /opt/otter-service-stdalone/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz
+RUN python3 -m pip install --break-system-packages /opt/otter-service-stdalone/otter_service_stdalone-${OTTER_SERVICE_STDALONE_VERSION}.tar.gz
 ENTRYPOINT ["otter_service_stdalone"]
 
 FROM base AS image-cloud
-RUN python3 -m pip install otter-service-stdalone==${OTTER_SERVICE_STDALONE_VERSION}
+RUN python3 -m pip install --break-system-packages otter-service-stdalone==${OTTER_SERVICE_STDALONE_VERSION}
 ENTRYPOINT ["otter_service_stdalone"]
 
